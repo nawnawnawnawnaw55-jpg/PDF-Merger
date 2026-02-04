@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF MERGE TOOL</title>
+    
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234ade80' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v5.35'/><path d='M14 2v5a1 1 0 0 0 1 1h5'/><path d='M14 19h6'/><path d='M17 16v6'/></svg>">
+
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent-green: #4ade80;
+            --pastel-pink: #fbcfe8;
+            --pink-hover: #f9a8d4;
+            --input-bg: #2d2d2d;
+            --card-bg: #252525;
+            --card-selected-bg: #382e34;
+            --scrollbar-gray: #555555;
+            --error-red: #ff6b6b;
+            --sidebar-width: 250px;
+            --col-count: 5;
+            --card-height: 240px;
+        }
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--scrollbar-gray) var(--input-bg);
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--input-bg);
+            border-right: 2px solid var(--accent-green);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 15px;
+            z-index: 10;
+            box-shadow: 5px 0 20px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--accent-green);
+            margin-bottom: 20px;
+        }
+
+        .logo-group h2 { margin: 0; font-size: 18px; letter-spacing: 2px; font-weight: 900; }
+
+        .control-btn {
+            background-color: var(--pastel-pink);
+            color: #333;
+            border: none;
+            padding: 12px;
+            font-weight: 800;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover { background-color: var(--pink-hover); transform: translateY(-2px); }
+        .control-btn.secondary { background-color: transparent; border: 2px solid var(--accent-green); color: var(--accent-green); }
+        .control-btn.secondary:hover { background-color: rgba(74, 222, 128, 0.1); }
+        .control-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        .control-btn.danger { background-color: transparent; border: 2px solid var(--error-red); color: var(--error-red); }
+        .control-btn.danger:hover { background-color: rgba(255, 107, 107, 0.1); }
+
+        .slider-group { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+        .slider-label {
+            font-size: 11px; color: var(--accent-green); text-transform: uppercase;
+            letter-spacing: 1px; display: block;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--bg-color);
+            border-radius: 6px;
+            padding: 4px;
+            border: 1px solid #444;
+        }
+        
+        .zoom-btn {
+            width: 30px; height: 30px;
+            background: transparent; border: none;
+            color: var(--pastel-pink); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; transition: background 0.2s, opacity 0.2s;
+        }
+        .zoom-btn:hover:not(:disabled) { background-color: rgba(251, 207, 232, 0.1); }
+        .zoom-btn:disabled { color: #555; cursor: not-allowed; opacity: 0.5; }
+        
+        .zoom-display {
+            font-family: 'Consolas', monospace;
+            font-size: 13px; font-weight: bold; color: var(--text-color);
+            min-width: 60px; text-align: center;
+        }
+
+        /* --- MAIN AREA --- */
+        .main-stage {
+            flex-grow: 1; position: relative; background-color: var(--bg-color);
+            overflow: hidden; display: flex; flex-direction: column;
+        }
+
+        .main-header {
+            height: 60px; display: flex; align-items: center; padding: 0 30px;
+            background-color: var(--bg-color); border-bottom: 1px solid #333;
+            flex-shrink: 0; z-index: 20;
+        }
+        .project-title-wrapper { display: flex; align-items: center; gap: 12px; position: relative; }
+        .header-icon { color: var(--accent-green); }
+        .edit-icon { color: #666; transition: color 0.2s; cursor: pointer; }
+        .project-title-wrapper:hover .edit-icon { color: var(--accent-green); }
+        .filename-input-display {
+            background: transparent; border: none; border-bottom: 2px solid transparent;
+            color: var(--pastel-pink); font-family: 'Consolas', monospace; font-size: 18px;
+            font-weight: bold; padding: 5px 0; outline: none; width: 300px; transition: all 0.2s;
+        }
+        .filename-input-display:hover { border-bottom-color: #444; }
+        .filename-input-display:focus { border-bottom-color: var(--accent-green); background-color: #222; padding-left: 10px; }
+
+        /* HELP BOX STYLES */
+        .help-container { position: relative; display: inline-block; cursor: help; margin-left: 10px; }
+        .help-icon { 
+            width: 20px; height: 20px; 
+            border: 1px solid var(--accent-green); 
+            color: var(--accent-green); 
+            border-radius: 4px; 
+            text-align: center; 
+            line-height: 18px; 
+            font-weight: bold; 
+            font-size: 13px; 
+            background: rgba(74, 222, 128, 0.1);
+            transition: all 0.2s;
+        }
+        .help-container:hover .help-icon { background: var(--accent-green); color: #000; }
+        .help-tooltip { 
+            visibility: hidden; opacity: 0;
+            width: 220px; 
+            background-color: #222; 
+            color: #ccc; 
+            text-align: left; 
+            border-radius: 6px; 
+            padding: 12px; 
+            position: absolute; 
+            z-index: 20001; 
+            top: 130%; 
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1px solid #444; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+            font-size: 12px; 
+            line-height: 1.5; 
+            pointer-events: none; 
+            transition: opacity 0.2s; 
+        }
+        .help-container:hover .help-tooltip { visibility: visible; opacity: 1; }
+        .help-list { padding-left: 15px; margin: 5px 0 0 0; }
+        .help-list li { margin-bottom: 4px; }
+        .help-title { color: var(--pastel-pink); font-weight: bold; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid #444; padding-bottom: 4px; display: block; margin-bottom: 5px; }
+
+        .view-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), opacity 0.15s;
+            background-color: var(--bg-color);
+        }
+        .view-wrapper.hidden { opacity: 0; pointer-events: none; transform: scale(0.98); z-index: 0; }
+        .view-wrapper.active { opacity: 1; transform: scale(1); z-index: 1; }
+
+        .grid-container {
+            flex-grow: 1; padding: 30px; overflow-y: auto; overflow-x: hidden;
+            display: grid;
+            position: relative; 
+            grid-template-columns: repeat(var(--col-count), 1fr);
+            grid-auto-rows: min-content;
+            gap: 20px; width: 100%;
+            align-content: start;
+        }
+
+        /* --- CARDS --- */
+        .card {
+            width: 100%; aspect-ratio: 1 / 1.414;
+            min-width: 0;
+            background-color: var(--card-bg); border: 2px solid transparent;
+            border-radius: 8px; display: flex; flex-direction: column;
+            position: relative; cursor: pointer; overflow: visible; 
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.1s, background-color 0.2s; 
+        }
+        
+        body:not(.dragging-active) .card:hover {
+            border-color: rgba(251, 207, 232, 0.5); transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .card.selected {
+            border-color: var(--pastel-pink); background-color: var(--card-selected-bg);
+            box-shadow: 0 0 15px rgba(251, 207, 232, 0.2); transform: translateY(-2px);
+        }
+        .card.danger {
+            border-color: var(--error-red) !important;
+            background-color: rgba(255, 107, 107, 0.1) !important;
+        }
+        
+        .card.dragging-source { 
+            opacity: 0.3; 
+            filter: grayscale(100%); 
+            transform: none !important;
+            box-shadow: none !important;
+            border-color: #444;
+            border-style: dashed;
+        }
+        
+        body.dragging-active .card {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .card.pop-in { animation: popFromCursor 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        .card.nested-stack::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #2a2a2a; border: 1px solid #444; border-radius: 8px; 
+            z-index: -1; 
+            transform: rotate(3deg); opacity: 0.7; pointer-events: none;
+            transition: transform 0.2s;
+        }
+        .card.nested-stack::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1f1f1f; border: 1px solid #333; border-radius: 8px; 
+            z-index: -2; 
+            transform: rotate(5deg); opacity: 0.5; pointer-events: none;
+            transition: transform 0.2s;
+        }
+        body:not(.dragging-active) .card.nested-stack:hover::before { transform: rotate(5deg) translate(2px, 0); }
+        body:not(.dragging-active) .card.nested-stack:hover::after { transform: rotate(8deg) translate(4px, 0); }
+
+        @keyframes popFromCursor {
+            0% { transform: translate(var(--tx), var(--ty)) scale(0.2); opacity: 0.5; }
+            100% { transform: translate(0, 0) scale(1); opacity: 1; }
+        }
+
+        #ghostContainer {
+            position: fixed; top: 0; left: 0; pointer-events: none;
+            z-index: 9999; will-change: transform;
+        }
+
+        .ghost-card {
+            position: absolute; 
+            background: #333;
+            border: 2px solid var(--pastel-pink); border-radius: 6px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); overflow: hidden;
+            transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), opacity 0.15s;
+        }
+        .ghost-card canvas { width: 100%; height: 100%; object-fit: contain; }
+
+        /* --- INSERTION MARKER --- */
+        .insertion-marker {
+            position: absolute;
+            pointer-events: none;
+            z-index: 200; 
+            display: none;
+            box-sizing: border-box;
+            border-radius: 8px; 
+            background-color: transparent; 
+            transition: none;
+        }
+        
+        .insertion-marker.wrapping {
+            background-color: transparent;
+            box-shadow: 0 0 25px 8px rgba(251, 207, 232, 0.4); 
+            border: 4px solid var(--pastel-pink);
+            transform: scale(1.001);
+            transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1), background-color 0.1s;
+        }
+        
+        .insertion-marker:not(.wrapping) { transform: scale(1); }
+
+        .marker-bar-visual {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--pastel-pink);
+            box-shadow: 0 0 8px var(--pastel-pink);
+            border-radius: 2px;
+            opacity: 1;
+            transition: opacity 0s;
+        }
+
+        .insertion-marker.wrapping .marker-bar-visual { opacity: 0; }
+
+        .preview-box { flex-grow: 1; background: #252525; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; pointer-events: none; border-radius: 6px 6px 0 0; z-index: 1; }
+        .preview-box canvas { width: 100%; height: 100%; object-fit: contain; opacity: 0; filter: blur(8px); transform: scale(0.98); transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s cubic-bezier(0.2, 0, 0, 1); }
+        .preview-box canvas.loaded { opacity: 1; filter: blur(0); transform: scale(1); }
+        .preview-box canvas.immediate { opacity: 1 !important; filter: blur(0) !important; transform: scale(1) !important; transition: none !important; }
+
+        .skeleton-loader { width: 100%; height: 100%; background: linear-gradient(110deg, #2a2a2a 8%, #323232 18%, #2a2a2a 33%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; position: absolute; top: 0; left: 0; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .card-footer { height: 35px; background-color: var(--input-bg); border-top: 1px solid #333; display: flex; align-items: center; justify-content: center; padding: 0 10px; font-size: 11px; color: var(--text-color); font-family: 'Consolas', monospace; flex-shrink: 0; pointer-events: none; border-radius: 0 0 8px 8px; z-index: 1; }
+        .card-footer span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .delete-btn { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; background-color: var(--error-red); border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.2s; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .delete-btn svg { stroke: white; width: 16px; height: 16px; }
+        body:not(.dragging-active) .card:hover .delete-btn { opacity: 1; }
+        body.dragging-active .delete-btn { display: none !important; opacity: 0 !important; }
+
+        .page-badge { position: absolute; top: 5px; left: 5px; background-color: rgba(0,0,0,0.7); color: var(--accent-green); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 5; pointer-events: none; }
+
+        .drop-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 222, 128, 0.1); border: 4px dashed var(--accent-green); display: flex; justify-content: center; align-items: center; z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.2s; backdrop-filter: blur(2px); }
+        .drop-overlay.active { opacity: 1; pointer-events: all; }
+        .drop-text { font-size: 24px; font-weight: bold; color: var(--accent-green); text-transform: uppercase; }
+
+        .nav-bar { height: 50px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid #333; background: var(--bg-color); flex-shrink: 0; border-top: 1px solid #333; }
+        .back-btn { color: var(--accent-green); cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: 14px; padding: 5px 10px; border-radius: 4px; transition: background 0.2s; }
+        .back-btn:hover { background: rgba(74, 222, 128, 0.1); }
+        .current-file-name { margin-left: 20px; color: var(--pastel-pink); font-family: 'Consolas', monospace; font-size: 14px; }
+        #fileInput { display: none; }
+        #contextFileInput { display: none; }
+        #customInsertFileInput { display: none; }
+        
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #333; color: var(--accent-green); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--accent-green); font-weight: bold; font-size: 12px; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; display: flex; align-items: center; gap: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        .toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        #contextMenu { position: absolute; background-color: #2b2b2b; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 180px; border-radius: 6px; display: none; z-index: 20000; padding: 5px 0; font-family: 'Segoe UI', sans-serif; font-size: 13px; }
+        .ctx-item { padding: 8px 15px; color: #e0e0e0; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.1s; }
+        .ctx-item:hover { background-color: rgba(74, 222, 128, 0.1); color: var(--accent-green); }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 20000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal { background: #252525; border: 1px solid var(--accent-green); padding: 20px; border-radius: 8px; width: 340px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.2s; }
+        .modal-overlay.active .modal { transform: translateY(0); }
+        .modal h3 { margin: 0; color: var(--accent-green); text-transform: uppercase; font-size: 16px; letter-spacing: 1px; }
+        .modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .modal-input { background: #333; border: 1px solid #555; color: white; padding: 10px; border-radius: 4px; width: 100%; font-family: 'Consolas', monospace; }
+        .modal-input:focus { outline: none; border-color: var(--accent-green); }
+        .file-label { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic; }
+        
+        .loading-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; color: var(--accent-green); font-weight: bold; z-index: 5; }
+
+        .editor-workspace { display: flex; flex-direction: column; align-items: center; height: 100%; width: 100%; overflow: hidden; background: #222; position: relative; cursor: default; }
+        .editor-workspace.panning { cursor: default; }
+        .editor-canvas-container { position: absolute; top: 0; left: 0; box-shadow: 0 0 50px rgba(0,0,0,0.5); transform-origin: 0 0; transition: opacity 0.2s ease; opacity: 0; }
+        .editor-canvas-container.no-anim { transition: none !important; }
+        .editor-active .editor-canvas-container { opacity: 1; }
+        
+        .draggable-text { position: absolute; cursor: text; border: 2px solid transparent; padding: 5px; background: transparent; color: black; caret-color: black; font-family: 'Times New Roman', serif; min-width: 50px; min-height: 20px; white-space: pre; font-size: 14px; user-select: text; }
+        .draggable-text::after { content: ''; position: absolute; inset: 0; border: 1px dashed var(--accent-green); pointer-events: none; }
+        .draggable-text:focus { outline: none; border: 2px solid var(--pastel-pink); background: rgba(251, 207, 232, 0.1); }
+        .draggable-text:focus::after { display: none; }
+        .draggable-text.can-drag { cursor: move; }
+        .draggable-text.is-tabbed { display: grid; grid-template-columns: 1fr auto 1fr; width: 100% !important; left: 0 !important; align-items: center; }
+        .draggable-text.is-tabbed > span { white-space: pre; pointer-events: auto; }
+        .header-slot { outline: none; min-width: 10px; }
+        .header-slot.left { justify-self: start; text-align: left; }
+        .header-slot.center { justify-self: center; text-align: center; }
+        .header-slot.right { justify-self: end; text-align: right; }
+        .guide-line { position: absolute; background-color: #00d2ff; pointer-events: none; z-index: 9999; display: none; width: 1px; height: 100%; top: 0; }
+        .guide-line.horizontal { width: 100%; height: 1px; left: 0; top: auto; }
+        .editor-toolbar { width: 100%; height: 60px; background: var(--input-bg); border-bottom: 1px solid #444; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 50; flex-shrink: 0; }
+        .tool-group { display: flex; gap: 10px; align-items: center; }
+        .range-input { width: 80px; background: #333; border: 1px solid #555; color: white; padding: 5px; border-radius: 4px; }
+        .style-select { background: #333; border: 1px solid #555; color: white; padding: 5px; border-radius: 4px; font-size: 11px; }
+        input[type="color"].style-color { width: 30px; height: 30px; border: 1px solid #555; border-radius: 4px; padding: 0; }
+        input[type="number"].style-num { width: 50px; background: #333; border: 1px solid #555; color: white; padding: 5px; border-radius: 4px; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+    <div id="ghostContainer"></div>
+    <div id="toast" class="toast">Action Undone</div>
+
+    <div id="contextMenu"></div>
+
+    <div id="uploadModal" class="modal-overlay">
+        <div class="modal">
+            <h3>File Upload</h3>
+            <p style="font-size: 13px; color: #aaa; margin: 0;">You are inside a file. How would you like to add the new file(s)?</p>
+            <div class="modal-actions">
+                <button class="control-btn secondary" onclick="resolveUpload('main')">Add to Main List</button>
+                <button class="control-btn" onclick="showPageSelect()">Insert Inside Current File</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pageSelectModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Insert Position</h3>
+            <p style="font-size: 13px; color: #aaa; margin: 0;">Enter page number (file will become this page):</p>
+            <input type="number" id="insertPageInput" class="modal-input" value="1" min="1">
+            <div class="modal-actions">
+                <button class="control-btn" onclick="resolveUpload('nested', false)">Insert at Page #</button>
+                <button class="control-btn secondary" id="btnInsertAtSelection" onclick="resolveUpload('nested', true)">Insert at Selection</button>
+                <button class="control-btn danger" onclick="cancelUpload()">Cancel</button>
+            </div>
+            <div id="nestedLoader" class="loading-overlay" style="display: none;">Merging...</div>
+        </div>
+    </div>
+
+    <div id="customInsertModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Insert Files at Page</h3>
+            <label style="font-size:11px; color:#aaa; margin-bottom:-10px;">Page Number:</label>
+            <input type="number" id="customInsertPageInput" class="modal-input" value="1" min="1">
+            <label style="font-size:11px; color:#aaa; margin-bottom:-10px;">Select File:</label>
+            <button class="control-btn secondary" onclick="document.getElementById('customInsertFileInput').click()">Browse Files</button>
+            <span id="customFileLabel" class="file-label">No file selected</span>
+            <div class="modal-actions">
+                <button class="control-btn" onclick="submitCustomInsert()">Insert</button>
+                <button class="control-btn danger" onclick="closeCustomInsertModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="largeFileModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Warning: Large File</h3>
+            <p style="font-size: 13px; color: #e0e0e0; margin: 0;">One or more files have over 1000 pages. This may slow down the application.</p>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
+                <input type="checkbox" id="suppressWarningCheck">
+                <label for="suppressWarningCheck" style="font-size:12px; color:#aaa;">Don't show this again</label>
+            </div>
+            <div class="modal-actions">
+                <button class="control-btn" onclick="confirmLargeFile()">Continue</button>
+                <button class="control-btn danger" onclick="cancelLargeFile()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="logo-group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v5.35"/>
+                <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+                <path d="M14 19h6"/>
+                <path d="M17 16v6"/>
+            </svg>
+            <h2>PDF MERGER</h2>
+        </div>
+
+        <button class="control-btn secondary" onclick="document.getElementById('fileInput').click()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add Files
+        </button>
+
+        <button class="control-btn secondary" onclick="openHeaderEditor()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            Headers
+        </button>
+
+        <button class="control-btn" onclick="mergeFiles()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Merge PDF
+        </button>
+
+        <div class="slider-group">
+            <span class="slider-label">Items Per Row</span>
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="colDecBtn" onclick="changeGridColumns(-1)" title="Fewer Columns (Bigger)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+                <span class="zoom-display" id="gridDisplay">5</span>
+                <button class="zoom-btn" id="colIncBtn" onclick="changeGridColumns(1)" title="More Columns (Smaller)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-stage" id="dropZone">
+        <div class="main-header">
+            <div class="project-title-wrapper">
+                <svg class="header-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                <input type="text" id="filenameInput" class="filename-input-display" value="PDF Merger" spellcheck="false" title="Click to rename" onfocus="handleNameFocus(this)" onblur="handleNameBlur(this)">
+                <svg class="edit-icon" onclick="document.getElementById('filenameInput').focus()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                
+                <div class="help-container">
+                    <div class="help-icon" id="mainHelpIcon">?</div>
+                    <div class="help-tooltip" id="mainHelpTooltip">
+                        <span class="help-title">Main View</span>
+                        <ul class="help-list">
+                            <li>Drag files to reorder</li>
+                            <li>Double-click to edit file pages</li>
+                            <li>Right-click for options</li>
+                            <li>Ctrl+Z to Undo</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <input type="file" id="fileInput" multiple accept=".pdf,.png,.jpg,.jpeg" onchange="handleFileSelect(this.files)">
+        <input type="file" id="contextFileInput" multiple accept=".pdf,.png,.jpg,.jpeg" onchange="handleContextFileSelect(this.files)">
+        <input type="file" id="customInsertFileInput" multiple accept=".pdf,.png,.jpg,.jpeg" onchange="handleCustomInsertFiles(this.files)">
+        
+        <div class="drop-overlay" id="dropOverlay"><div class="drop-text">Drop Files Here</div></div>
+
+        <div style="position: relative; flex-grow: 1;">
+            <div id="fileViewWrapper" class="view-wrapper active">
+                <div id="fileGrid" class="grid-container"></div>
+            </div>
+
+            <div id="pageViewWrapper" class="view-wrapper hidden">
+                <div class="nav-bar">
+                    <div class="back-btn" onclick="closePageView()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                        Back to Files
+                    </div>
+                    <span class="current-file-name" id="editingFileName">Filename.pdf</span>
+                    
+                    </div>
+                <div id="pageGrid" class="grid-container"></div>
+            </div>
+
+            <div id="headerEditorWrapper" class="view-wrapper hidden">
+                <div class="editor-toolbar">
+                    <div class="tool-group">
+                        <div class="back-btn" onclick="closeHeaderEditor()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                            Back
+                        </div>
+                        <span style="color: #666;">|</span>
+                        <button class="control-btn secondary" onmousedown="event.preventDefault()" style="padding: 6px 12px; font-size: 12px;" onclick="addHeaderElement('text')">+ Text Box</button>
+                        <button class="control-btn secondary" onmousedown="event.preventDefault()" style="padding: 6px 12px; font-size: 12px;" onclick="addHeaderElement('page')">+ Page #</button>
+                        <button class="control-btn danger" onmousedown="event.preventDefault()" style="padding: 6px 12px; font-size: 12px;" onclick="deleteActiveHeaderElement()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                        
+                        <div class="help-container">
+                            <div class="help-icon">?</div>
+                            <div class="help-tooltip">
+                                <span class="help-title">Header Editor</span>
+                                <ul class="help-list">
+                                    <li>Drag to position text</li>
+                                    <li>{x} = Page, {y} = Total</li>
+                                    <li>Use 'Tab' for L/C/R columns</li>
+                                    <li>Ranges: '1-5', 'odd', 'even'</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <span style="color: #666;">|</span>
+                        <select id="fontSelect" class="style-select" onchange="updateSelectedStyle('font', this.value)">
+                            <option value="Times-Roman">Times Roman</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Courier">Courier</option>
+                            <option value="Cambria-Math">Cambria Math</option>
+                        </select>
+                        <input type="number" id="fontSizeInput" class="style-num" value="12" min="6" max="72" onchange="updateSelectedStyle('fontSize', this.value)">
+                        <input type="color" id="colorSelect" class="style-color" value="#000000" onchange="updateSelectedStyle('color', this.value)">
+                    </div>
+                    <div class="tool-group">
+                        <label class="settings-label" style="margin:0;">Margin (px):</label>
+                        <input type="number" id="marginInput" class="style-num" value="72" min="0" max="200" onchange="updateMargin(this.value)">
+                        <span style="color: #666;">|</span>
+                        <span class="settings-label" style="margin: 0;">Apply to:</span>
+                        <input type="text" id="headerRange" class="range-input" value="1-end" placeholder="e.g. 1-5, odd">
+                    </div>
+                </div>
+                <div class="editor-workspace" id="editorWorkspace">
+                    <div id="editorCanvasContainer" class="editor-canvas-container">
+                        <div id="guideV" class="guide-line vertical"></div>
+                        <div id="guideH" class="guide-line horizontal"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let files = [];
+        let currentFileId = null;
+        let selectedIndices = new Set();
+        let lastSelectedIndex = null;
+        let historyStack = [], redoStack = [];
+        const MAX_HISTORY = 50;
+        let currentCols = 5;
+        const MIN_COLS = 1;
+
+        let renderSessionId = 0;
+
+        let isInternalDrag = false;
+        let dragStartPos = {x:0, y:0};
+        let potentialDrag = false;
+        let dragSrcIndex = -1;
+        
+        const ghostContainer = document.getElementById('ghostContainer');
+        let dropIndex = -1; 
+        let insertionMarker = null; 
+        
+        let autoScrollActive = false;
+        let autoScrollDir = 0; 
+        let autoScrollStartTime = 0;
+        let lastAutoScrollTime = 0;
+        let lastMouseEvent = null;
+
+        let activeContextIndex = -1; 
+        let customInsertFilesList = []; 
+
+        let headerElements = [];
+        let headerHistory = [], headerRedo = [];
+        let editorScale = 2;
+        let activeHeaderId = null;
+        let viewState = { scale: 1, x: 0, y: 0, isPanning: false, startX: 0, startY: 0 };
+        let defaultFilename = "PDF Merger";
+        let globalMargin = 72;
+        const DEFAULT_TEXT = "Click to edit text";
+        const TOP_MARGIN_Y = 50;
+
+        let pendingFiles = [];
+        let suppressLargeFileWarning = false;
+
+        // --- HELP SYSTEM UPDATER ---
+        function updateMainHelp(mode) {
+            const tooltip = document.getElementById('mainHelpTooltip');
+            if(mode === 'main') {
+                tooltip.innerHTML = `
+                    <span class="help-title">Main View</span>
+                    <ul class="help-list">
+                        <li>Drag files to reorder</li>
+                        <li>Double-click to edit pages</li>
+                        <li>Right-click for options</li>
+                        <li>Ctrl+Z to Undo</li>
+                    </ul>`;
+            } else {
+                tooltip.innerHTML = `
+                    <span class="help-title">Page View</span>
+                    <ul class="help-list">
+                        <li>Drag to reorder pages</li>
+                        <li>Right-click to insert file</li>
+                        <li>Delete key to remove</li>
+                        <li>Back button to save</li>
+                    </ul>`;
+            }
+        }
+
+        // --- LARGE FILE WARNING UTILS ---
+        let largeFileResolve = null;
+        let largeFileReject = null;
+
+        async function checkFilesForSafety(fileList) {
+            if (suppressLargeFileWarning) return true;
+            let largeFound = false;
+            for(const f of fileList) {
+                if(f.type === 'application/pdf') {
+                    try {
+                        const ab = await f.arrayBuffer();
+                        const doc = await pdfjsLib.getDocument(ab).promise;
+                        if(doc.numPages > 1000) { largeFound = true; break; }
+                    } catch(e) { console.error("Preview check failed", e); }
+                }
+            }
+            if(largeFound) {
+                document.getElementById('largeFileModal').classList.add('active');
+                return new Promise((resolve, reject) => {
+                    largeFileResolve = resolve;
+                    largeFileReject = reject;
+                });
+            }
+            return true;
+        }
+
+        function confirmLargeFile() {
+            const suppress = document.getElementById('suppressWarningCheck').checked;
+            if (suppress) suppressLargeFileWarning = true;
+            document.getElementById('largeFileModal').classList.remove('active');
+            if(largeFileResolve) largeFileResolve(true);
+        }
+
+        function cancelLargeFile() {
+            document.getElementById('largeFileModal').classList.remove('active');
+            if(largeFileReject) largeFileReject();
+        }
+
+        function handleNameFocus(el) { if(el.value === defaultFilename) el.value = ''; }
+        function handleNameBlur(el) { if(el.value.trim() === '') el.value = defaultFilename; document.title = el.value || "PDF MERGE TOOL"; }
+
+        function changeGridColumns(delta) {
+            let maxAllowed = getMaxCols();
+            let newCols = currentCols + delta;
+            if (newCols < MIN_COLS) newCols = MIN_COLS;
+            if (newCols > maxAllowed) newCols = maxAllowed;
+            currentCols = newCols;
+            updateGridVisuals();
+        }
+
+        function getMaxCols() { 
+            const itemCount = currentFileId ? (files.find(f => f.id === currentFileId)?.pageOrder.length || 0) : files.length;
+            return Math.max(20, itemCount); 
+        }
+
+        function updateGridVisuals() {
+            let maxAllowed = getMaxCols();
+            if (currentCols > maxAllowed) currentCols = maxAllowed;
+            if (currentCols < MIN_COLS) currentCols = MIN_COLS;
+            document.documentElement.style.setProperty('--col-count', currentCols);
+            document.getElementById('gridDisplay').innerText = currentCols;
+            document.getElementById('colDecBtn').disabled = (currentCols <= MIN_COLS);
+            document.getElementById('colIncBtn').disabled = (currentCols >= maxAllowed);
+        }
+
+        const workspace = document.getElementById('editorWorkspace');
+        const container = document.getElementById('editorCanvasContainer');
+
+        function updateTransform() {
+            container.style.transform = `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`;
+        }
+
+        function enforceBoundaries(proposedX, proposedY) {
+            const wsW = workspace.clientWidth;
+            const wsH = workspace.clientHeight;
+            const contentW = container.offsetWidth * viewState.scale;
+            let newX = proposedX;
+            let newY = proposedY;
+
+            if (contentW <= wsW) {
+                newX = (wsW - contentW) / 2;
+            } else {
+                const minX = wsW - contentW;
+                const maxX = 0;
+                newX = Math.min(maxX, Math.max(minX, newX));
+            }
+            
+            const contentH = container.offsetHeight * viewState.scale;
+            if (contentH <= wsH) {
+                 newY = (wsH - contentH) / 2;
+            } else {
+                const minY = wsH - contentH;
+                const maxY = 0;
+                newY = Math.min(maxY, Math.max(minY, newY));
+            }
+
+            return { x: newX, y: newY };
+        }
+
+        workspace.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            container.classList.add('no-anim');
+            const scaleAmount = -e.deltaY * 0.001;
+            const newScale = Math.min(Math.max(0.1, viewState.scale + scaleAmount), 5);
+            viewState.scale = newScale;
+            const bounds = enforceBoundaries(viewState.x, viewState.y);
+            viewState.x = bounds.x;
+            viewState.y = bounds.y;
+            updateTransform();
+        });
+
+        workspace.addEventListener('mousedown', (e) => {
+            if (e.target === workspace || e.target === container) {
+                if (activeHeaderId) {
+                    activeHeaderId = null;
+                    renderHeaderElements(); 
+                }
+                viewState.isPanning = true;
+                viewState.startX = e.clientX - viewState.x;
+                viewState.startY = e.clientY - viewState.y;
+                workspace.classList.add('panning');
+                container.classList.add('no-anim');
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (viewState.isPanning) {
+                let rawX = e.clientX - viewState.startX;
+                let rawY = e.clientY - viewState.startY;
+                const bounds = enforceBoundaries(rawX, rawY);
+                viewState.x = bounds.x;
+                viewState.y = bounds.y;
+                updateTransform();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            viewState.isPanning = false;
+            workspace.classList.remove('panning');
+        });
+        
+        function updateMargin(val) {
+            pushHeaderHistory();
+            globalMargin = parseInt(val);
+            renderHeaderElements(); 
+            updateGuides();
+        }
+        
+        function updateGuides() {
+             const gLeft = document.getElementById('guideLeft');
+             const gRight = document.getElementById('guideRight');
+             if(gLeft) gLeft.style.left = globalMargin + 'px';
+             if(gRight) gRight.style.left = (container.offsetWidth - globalMargin) + 'px';
+             const gCenter = document.getElementById('guideCenter');
+             if(gCenter) gCenter.style.left = (container.offsetWidth / 2) + 'px';
+             const gMid = document.getElementById('guideMid');
+             if(gMid) gMid.style.top = (container.offsetHeight / 2) + 'px';
+             const gTop = document.getElementById('guideTop');
+             if(gTop) gTop.style.top = TOP_MARGIN_Y + 'px';
+        }
+
+        // HEADER HISTORY
+        function pushHeaderHistory() {
+            const current = JSON.parse(JSON.stringify(headerElements));
+            headerHistory.push(current);
+            if (headerHistory.length > 30) headerHistory.shift();
+            headerRedo = []; 
+        }
+        function undoHeader() {
+            if (headerHistory.length === 0) return;
+            const current = JSON.parse(JSON.stringify(headerElements));
+            headerRedo.push(current);
+            headerElements = headerHistory.pop();
+            renderHeaderElements();
+            showToast("Undo");
+        }
+        function redoHeader() {
+            if (headerRedo.length === 0) return;
+            const current = JSON.parse(JSON.stringify(headerElements));
+            headerHistory.push(current);
+            headerElements = headerRedo.pop();
+            renderHeaderElements();
+            showToast("Redo");
+        }
+
+        // Header Editor Logic
+        async function openHeaderEditor() {
+            if(files.length === 0) return alert("Please add files first.");
+            document.getElementById('fileViewWrapper').classList.add('hidden');
+            document.getElementById('pageViewWrapper').classList.add('hidden');
+            const editor = document.getElementById('headerEditorWrapper');
+            editor.classList.remove('hidden');
+            editor.classList.add('active');
+            container.classList.remove('no-anim');
+            setTimeout(() => { editor.classList.add('editor-active'); }, 50);
+            requestAnimationFrame(async () => {
+                const f = files[0];
+                const page = await f.pdfDoc.getPage(1);
+                editorScale = 2;
+                const viewport = page.getViewport({ scale: editorScale }); 
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width; canvas.height = viewport.height;
+                const oldCanvas = container.querySelector('canvas');
+                if(oldCanvas) oldCanvas.remove();
+                container.innerHTML = ''; 
+                const gL = document.createElement('div'); gL.id='guideLeft'; gL.className='guide-line vertical'; container.appendChild(gL);
+                const gR = document.createElement('div'); gR.id='guideRight'; gR.className='guide-line vertical'; container.appendChild(gR);
+                const gC = document.createElement('div'); gC.id='guideCenter'; gC.className='guide-line vertical'; container.appendChild(gC);
+                const gM = document.createElement('div'); gM.id='guideMid'; gM.className='guide-line horizontal'; container.appendChild(gM);
+                const gT = document.createElement('div'); gT.id='guideTop'; gT.className='guide-line horizontal'; container.appendChild(gT);
+                container.style.width = `${viewport.width}px`; container.style.height = `${viewport.height}px`;
+                container.appendChild(canvas);
+                updateGuides();
+                await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
+                const wsWidth = workspace.clientWidth;
+                const padding = 60;
+                const fitScale = (wsWidth - padding) / viewport.width;
+                viewState.scale = Math.min(1.2, fitScale);
+                const contentW = viewport.width * viewState.scale;
+                viewState.x = (wsWidth - contentW) / 2;
+                viewState.y = 20; 
+                updateTransform();
+                renderHeaderElements();
+            });
+        }
+
+        function closeHeaderEditor() {
+            const editor = document.getElementById('headerEditorWrapper');
+            container.classList.remove('no-anim'); 
+            editor.classList.remove('editor-active'); 
+            setTimeout(() => {
+                editor.classList.remove('active');
+                editor.classList.add('hidden');
+                
+                // FORCE RESET TO MAIN PAGE
+                document.getElementById('pageViewWrapper').className = 'view-wrapper hidden';
+                document.getElementById('fileViewWrapper').className = 'view-wrapper active';
+                
+                currentFileId = null;
+                selectedIndices.clear();
+                renderFiles(true);
+            }, 200); 
+        }
+
+        function addHeaderElement(type) {
+            pushHeaderHistory();
+            if (type === 'page' && activeHeaderId) {
+                const el = headerElements.find(x => x.id === activeHeaderId);
+                const domNode = document.querySelector(`.draggable-text[data-id="${activeHeaderId}"]`);
+                if (el && domNode) {
+                    if(domNode.classList.contains('is-tabbed')) {
+                        const activeSlot = document.activeElement;
+                        if(activeSlot && activeSlot.classList.contains('header-slot')) {
+                             document.execCommand('insertText', false, ' Page {x} of {y} ');
+                             syncTextFromSlots(el);
+                             return;
+                        }
+                    }
+                    domNode.focus();
+                    document.execCommand('insertText', false, ' Page {x} of {y} ');
+                    return;
+                }
+            }
+            const id = Date.now();
+            const text = type === 'page' ? "Page {x} of {y}" : DEFAULT_TEXT;
+            const conW = container.offsetWidth; 
+            const centerX = conW / 2 - 50; 
+            const topY = 30;
+            headerElements.push({ id: id, x: centerX, y: topY, text: text, type: type, font: 'Times-Roman', color: '#000000', fontSize: 12 });
+            activeHeaderId = id; 
+            renderHeaderElements();
+            setTimeout(() => {
+                const newDiv = container.querySelector(`.draggable-text[data-id="${id}"]`);
+                if(newDiv) {
+                    if(text === DEFAULT_TEXT) {
+                        newDiv.innerText = ''; 
+                        headerElements.find(h=>h.id===id).text = '';
+                    }
+                    newDiv.focus();
+                }
+            }, 10);
+        }
+
+        function deleteActiveHeaderElement() {
+            if (!activeHeaderId) return;
+            pushHeaderHistory();
+            headerElements = headerElements.filter(x => x.id !== activeHeaderId);
+            activeHeaderId = null;
+            renderHeaderElements();
+        }
+
+        function updateSelectedStyle(prop, val) {
+            if(!activeHeaderId) return;
+            const el = headerElements.find(x => x.id === activeHeaderId);
+            if(el) { el[prop] = val; renderHeaderElements(); }
+        }
+        
+        function syncTextFromSlots(el) {
+            const div = container.querySelector(`.draggable-text[data-id="${el.id}"]`);
+            if(!div) return;
+            if (!div.classList.contains('is-tabbed')) {
+                el.text = div.innerText;
+                return;
+            }
+            const s1 = div.querySelector('.header-slot.left');
+            const s2 = div.querySelector('.header-slot.center');
+            const s3 = div.querySelector('.header-slot.right');
+            let t1 = s1 ? s1.innerText.replace(/\n/g,'') : '';
+            let t2 = s2 ? s2.innerText.replace(/\n/g,'') : '';
+            let t3 = s3 ? s3.innerText.replace(/\n/g,'') : '';
+            el.text = `${t1}\t${t2}\t${t3}`;
+        }
+
+        function renderHeaderElements() {
+            Array.from(container.getElementsByClassName('draggable-text')).forEach(el => el.remove());
+            headerElements.forEach(el => {
+                const div = document.createElement('div');
+                div.className = 'draggable-text';
+                div.setAttribute('data-id', el.id);
+                div.style.fontFamily = el.font;
+                div.style.color = el.color;
+                div.style.fontSize = (el.fontSize * editorScale) + 'px';
+                const hasTabs = el.text.includes('\t');
+                if (hasTabs) {
+                    div.classList.add('is-tabbed');
+                    div.style.width = '100%';
+                    div.style.left = '0px';
+                    div.style.top = el.y + 'px';
+                    const parts = el.text.split('\t');
+                    const s1 = document.createElement('span'); s1.className='header-slot left'; s1.contentEditable=true; s1.innerText = parts[0] || '';
+                    s1.style.paddingLeft = globalMargin + 'px'; 
+                    const s2 = document.createElement('span'); s2.className='header-slot center'; s2.contentEditable=true; s2.innerText = parts[1] || '';
+                    const s3 = document.createElement('span'); s3.className='header-slot right'; s3.contentEditable=true; s3.innerText = parts[2] || '';
+                    s3.style.paddingRight = globalMargin + 'px'; 
+                    [s1, s2, s3].forEach(s => {
+                        s.oninput = () => syncTextFromSlots(el);
+                        s.onblur = () => { if(s.innerText === '') s.innerHTML = ''; syncTextFromSlots(el); };
+                        s.onkeydown = (e) => {
+                            if (e.key === 'Tab') { e.preventDefault(); if (s === s1) s2.focus(); else if (s === s2) s3.focus(); else if (s === s3) s1.focus(); }
+                            if (e.key === 'Backspace' && (s === s2 || s === s3) && s.innerText === '') {
+                                pushHeaderHistory();
+                                el.text = el.text.replace(/\t/g, ' ').trim(); 
+                                renderHeaderElements();
+                            }
+                            if (e.key === ' ') pushHeaderHistory();
+                        }
+                    });
+                    div.appendChild(s1); div.appendChild(s2); div.appendChild(s3);
+                } else {
+                    div.classList.remove('is-tabbed');
+                    div.contentEditable = true;
+                    if (document.activeElement !== div) div.innerText = el.text;
+                    div.style.left = el.x + 'px';
+                    div.style.top = el.y + 'px';
+                    div.style.width = 'auto';
+                    div.oninput = () => el.text = div.innerText;
+                    div.onkeydown = (e) => {
+                        if (e.key === 'Tab') {
+                            e.preventDefault();
+                            pushHeaderHistory();
+                            el.text = el.text + "\t"; 
+                            renderHeaderElements();
+                            setTimeout(() => {
+                                const newDiv = container.querySelector(`.draggable-text[data-id="${el.id}"]`);
+                                if(newDiv) {
+                                    const centerSlot = newDiv.querySelector('.header-slot.center');
+                                    if(centerSlot) centerSlot.focus();
+                                }
+                            }, 10);
+                        }
+                        if (e.key === ' ') pushHeaderHistory();
+                    };
+                    div.onfocus = () => { 
+                        activeHeaderId = el.id; 
+                        if(div.innerText === DEFAULT_TEXT) { div.innerText = ''; el.text = ''; }
+                    };
+                    div.onblur = () => { 
+                        if(div.innerText.trim() === '') { div.innerText = DEFAULT_TEXT; el.text = DEFAULT_TEXT; }
+                    };
+                }
+                let startLeft = 0, startTop = 0;
+                div.onmousedown = (e) => {
+                    e.stopPropagation();
+                    if(div.classList.contains('is-tabbed')) {
+                        if (e.target.classList.contains('header-slot')) { activeHeaderId = el.id; return; }
+                    }
+                    activeHeaderId = el.id;
+                    document.getElementById('fontSizeInput').value = el.fontSize;
+                    document.getElementById('colorSelect').value = el.color;
+                    document.getElementById('fontSelect').value = el.font;
+                    if(!div.classList.contains('is-tabbed')) { if(div.innerText === DEFAULT_TEXT) div.focus(); }
+                    const rect = div.getBoundingClientRect();
+                    const edgeSize = 10; 
+                    const isEdge = (e.clientX < rect.left + edgeSize || e.clientX > rect.right - edgeSize || e.clientY < rect.top + edgeSize || e.clientY > rect.bottom - edgeSize);
+                    if (!isEdge && !div.classList.contains('is-tabbed')) return; 
+                    e.preventDefault(); 
+                    let isDragging = false;
+                    const startX = e.clientX, startY = e.clientY;
+                    startLeft = el.x; startTop = el.y; 
+                    const conW = container.offsetWidth;
+                    const conH = container.offsetHeight;
+                    const gL=document.getElementById('guideLeft'), gR=document.getElementById('guideRight'), gC=document.getElementById('guideCenter'), gM=document.getElementById('guideMid'), gT=document.getElementById('guideTop');
+                    const onMove = (mv) => {
+                        if (!isDragging && Math.hypot(mv.clientX - startX, mv.clientY - startY) > 5) {
+                            isDragging = true;
+                            div.blur(); window.getSelection().removeAllRanges();
+                            div.style.cursor = 'move';
+                        }
+                        if (isDragging) {
+                            mv.preventDefault();
+                            let deltaX = (mv.clientX - startX) / viewState.scale;
+                            let deltaY = (mv.clientY - startY) / viewState.scale;
+                            let newLeft = startLeft + deltaX;
+                            let newTop = startTop + deltaY;
+                            if (div.classList.contains('is-tabbed')) {
+                                newLeft = 0; 
+                            } else {
+                                const elW = div.offsetWidth;
+                                const midX = newLeft + elW / 2;
+                                const snapThresh = 10 / viewState.scale;
+                                gL.style.display='none'; gR.style.display='none'; gC.style.display='none';
+                                if (Math.abs(newLeft - globalMargin) < snapThresh) { newLeft = globalMargin; gL.style.display='block'; }
+                                else if (Math.abs((newLeft + elW) - (conW - globalMargin)) < snapThresh) { newLeft = conW - globalMargin - elW; gR.style.display='block'; }
+                                else if (Math.abs(midX - conW/2) < snapThresh) { newLeft = conW/2 - elW/2; gC.style.display='block'; }
+                            }
+                            if (Math.abs(newTop - (conH/2)) < 10/viewState.scale) { newTop = conH/2; gM.style.display='block'; } else gM.style.display='none';
+                            if (Math.abs(newTop - TOP_MARGIN_Y) < 10/viewState.scale) { newTop = TOP_MARGIN_Y; gT.style.top = TOP_MARGIN_Y + 'px'; gT.style.display='block'; } else { gT.style.display='none'; }
+                            div.style.left = newLeft + 'px'; 
+                            div.style.top = newTop + 'px';
+                            el.x = newLeft; el.y = newTop;
+                        }
+                    };
+                    const onUp = () => {
+                        window.removeEventListener('mousemove', onMove);
+                        window.removeEventListener('mouseup', onUp);
+                        div.style.cursor = 'text';
+                        [gL,gR,gC,gM,gT].forEach(g=>g.style.display='none');
+                        if(isDragging && (startLeft !== el.x || startTop !== el.y)) { pushHeaderHistory(); }
+                    };
+                    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+                };
+                div.onmousemove = (e) => {
+                    const rect = div.getBoundingClientRect();
+                    const edgeSize = 10;
+                    const isEdge = (e.clientX < rect.left + edgeSize || e.clientX > rect.right - edgeSize || e.clientY < rect.top + edgeSize || e.clientY > rect.bottom - edgeSize);
+                    if (div.classList.contains('is-tabbed')) {
+                         if (e.target.classList.contains('header-slot')) div.style.cursor = 'text';
+                         else div.style.cursor = 'move';
+                    } else {
+                         if (document.activeElement !== div) div.style.cursor = isEdge ? 'move' : 'text';
+                    }
+                };
+                div.oncontextmenu = (e) => { e.preventDefault(); }; 
+                container.appendChild(div);
+            });
+            if (activeHeaderId) {
+                const el = headerElements.find(x => x.id === activeHeaderId);
+                if(el) {
+                    document.getElementById('fontSizeInput').value = el.fontSize;
+                    document.getElementById('colorSelect').value = el.color;
+                    document.getElementById('fontSelect').value = el.font;
+                }
+            }
+        }
+
+        async function mergeFiles() {
+            if (!files.length) return alert("No files!");
+            try {
+                const merged = await PDFLib.PDFDocument.create();
+                for (const f of files) {
+                    const buffer = await f.file.arrayBuffer();
+                    const src = await PDFLib.PDFDocument.load(buffer);
+                    const copied = await merged.copyPages(src, f.pageOrder.map(p=>p-1));
+                    copied.forEach(p => merged.addPage(p));
+                }
+                if (headerElements.length > 0) {
+                    const pages = merged.getPages();
+                    const rangeStr = document.getElementById('headerRange').value.toLowerCase().trim();
+                    const totalPages = pages.length;
+                    const fonts = { 
+                        'Helvetica': await merged.embedFont(PDFLib.StandardFonts.Helvetica), 
+                        'Times-Roman': await merged.embedFont(PDFLib.StandardFonts.TimesRoman), 
+                        'Courier': await merged.embedFont(PDFLib.StandardFonts.Courier),
+                        'Cambria-Math': await merged.embedFont(PDFLib.StandardFonts.TimesRoman) 
+                    };
+                    const hexToRgb = (hex) => { const r = parseInt(hex.slice(1, 3), 16) / 255; const g = parseInt(hex.slice(3, 5), 16) / 255; const b = parseInt(hex.slice(5, 7), 16) / 255; return { r, g, b }; };
+                    pages.forEach((page, idx) => {
+                        const pageNum = idx + 1;
+                        let shouldApply = false;
+                        if (rangeStr === 'all' || rangeStr === '1-end') shouldApply = true;
+                        else if (rangeStr === 'odd') shouldApply = (pageNum % 2 !== 0);
+                        else if (rangeStr === 'even') shouldApply = (pageNum % 2 === 0);
+                        else {
+                            const parts = rangeStr.split('-');
+                            if(parts.length === 2) { const start = parseInt(parts[0]); const end = parts[1] === 'end' ? totalPages : parseInt(parts[1]); if (pageNum >= start && pageNum <= end) shouldApply = true; } 
+                            else { if (pageNum == parseInt(rangeStr)) shouldApply = true; }
+                        }
+                        if (shouldApply) {
+                            const { width, height } = page.getSize();
+                            const scaleFactor = 2; 
+                            headerElements.forEach(el => {
+                                let rawText = el.text.replace('{x}', pageNum).replace('{y}', totalPages);
+                                const fontObj = fonts[el.font] || fonts['Helvetica'];
+                                const c = hexToRgb(el.color);
+                                const fSize = parseInt(el.fontSize);
+                                const chunks = rawText.split('\t');
+                                if (chunks.length > 1) {
+                                    if(chunks[0]) { page.drawText(chunks[0], { x: globalMargin, y: height - (el.y/scaleFactor) - fSize, size: fSize, font: fontObj, color: PDFLib.rgb(c.r, c.g, c.b) }); }
+                                    if(chunks[1]) { const w = fontObj.widthOfTextAtSize(chunks[1], fSize); page.drawText(chunks[1], { x: (width/2) - (w/2), y: height - (el.y/scaleFactor) - fSize, size: fSize, font: fontObj, color: PDFLib.rgb(c.r, c.g, c.b) }); }
+                                    if(chunks[2]) { const w = fontObj.widthOfTextAtSize(chunks[2], fSize); page.drawText(chunks[2], { x: width - globalMargin - w, y: height - (el.y/scaleFactor) - fSize, size: fSize, font: fontObj, color: PDFLib.rgb(c.r, c.g, c.b) }); }
+                                } else { page.drawText(rawText, { x: el.x / scaleFactor, y: height - (el.y / scaleFactor) - fSize, size: fSize, font: fontObj, color: PDFLib.rgb(c.r, c.g, c.b) }); }
+                            });
+                        }
+                    });
+                }
+                const bytes = await merged.save();
+                let name = document.getElementById('filenameInput').value.trim();
+                if (!name) name = `merged_${Date.now()}`;
+                if (!name.toLowerCase().endsWith('.pdf')) name += '.pdf';
+                if (window.showSaveFilePicker) {
+                    try {
+                        const h = await window.showSaveFilePicker({ suggestedName: name, types: [{description: 'PDF', accept: {'application/pdf': ['.pdf']}}] });
+                        const w = await h.createWritable(); await w.write(bytes); await w.close(); return;
+                    } catch (e) { if(e.name !== 'AbortError') console.error(e); return; }
+                }
+                const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'})); a.download = name; a.click();
+            } catch (e) { console.error(e); alert("Merge Error"); }
+        }
+
+        function cloneState(s) { return s.map(f => ({ ...f, pageOrder: [...f.pageOrder], isNested: f.isNested })); }
+        function pushHistory() { historyStack.push(cloneState(files)); if(historyStack.length>MAX_HISTORY) historyStack.shift(); redoStack=[]; }
+        function triggerUndo() { if(historyStack.length===0)return; redoStack.push(cloneState(files)); files=historyStack.pop(); restoreState(); showToast("Undo"); }
+        function triggerRedo() { if(redoStack.length===0)return; historyStack.push(cloneState(files)); files=redoStack.pop(); restoreState(); showToast("Redo"); }
+        function restoreState() { if(currentFileId){const f=files.find(x=>x.id===currentFileId); if(!f)closePageView(); else renderPages(f,true);}else renderFiles(true); selectedIndices.clear(); updateGridVisuals(); }
+        function showToast(m) { const t=document.getElementById('toast'); t.innerText=m; t.classList.add('visible'); setTimeout(()=>t.classList.remove('visible'),1500); }
+        
+        window.addEventListener('keydown', (e) => {
+            // FIX: Check for Header Editor first to apply separate undo logic
+            const isHeaderMode = !document.getElementById('headerEditorWrapper').classList.contains('hidden');
+            
+            if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z' && !e.shiftKey) { 
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.isContentEditable) return;
+                e.preventDefault(); 
+                if(isHeaderMode){undoHeader();} else {triggerUndo();} 
+            }
+            if ((e.ctrlKey||e.metaKey) && (e.key.toLowerCase()==='y' || (e.shiftKey && e.key.toLowerCase()==='z'))) { 
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.isContentEditable) return;
+                e.preventDefault(); 
+                if(isHeaderMode){redoHeader();} else {triggerRedo();} 
+            }
+            if (e.key==='Delete'||e.key==='Backspace') { 
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.isContentEditable) return;
+                if(!activeHeaderId && selectedIndices.size>0 && !isHeaderMode) deleteSelectedItems(); 
+            }
+        });
+
+        window.addEventListener('mousemove', e => { if(potentialDrag && !isInternalDrag && Math.hypot(e.clientX-dragStartPos.x, e.clientY-dragStartPos.y)>5) startInternalDrag(e); if(isInternalDrag) { e.preventDefault(); updateInternalDrag(e); } });
+        window.addEventListener('mouseup', e => { if(isInternalDrag) endInternalDrag(e); else if(potentialDrag) handleCardClick(e, dragSrcIndex); potentialDrag=false; isInternalDrag=false; dragSrcIndex=-1; });
+        const dropZone = document.getElementById('dropZone'), overlay = document.getElementById('dropOverlay');
+        ['dragenter','dragover','dragleave','drop'].forEach(evt=>dropZone.addEventListener(evt,e=>{e.preventDefault();e.stopPropagation()}));
+        dropZone.addEventListener('dragenter',()=>overlay.classList.add('active'));
+        overlay.addEventListener('dragleave',e=>{if(!e.relatedTarget || !overlay.contains(e.relatedTarget)) overlay.classList.remove('active')});
+        dropZone.addEventListener('drop',e=>{overlay.classList.remove('active'); if(e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files)});
+
+        function onCardMouseDown(e, i) { if(e.button===2) return; if(e.target.closest('.delete-btn'))return; dragSrcIndex=i; dragStartPos={x:e.clientX, y:e.clientY}; potentialDrag=true; }
+        
+        function createCard(t,b,i) { 
+            const c=document.createElement('div'); c.className='card'; c.dataset.index=i; 
+            if (!currentFileId && files[i] && files[i].isNested) { c.classList.add('nested-stack'); }
+            c.onmousedown=e=>onCardMouseDown(e,i); 
+            
+            // CONTEXT MENU HANDLER
+            c.oncontextmenu = (e) => {
+                e.preventDefault();
+                showContextMenu(e, i);
+            };
+
+            const p=document.createElement('div'); p.className='preview-box'; p.innerHTML='<div class="skeleton-loader"></div>'; 
+            const ft=document.createElement('div'); ft.className='card-footer'; ft.innerHTML=`<span>${t}</span>`; 
+            const d=document.createElement('div'); d.className='delete-btn'; d.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'; 
+            d.onmouseenter = () => { if (selectedIndices.has(i)) { const con = currentFileId ? document.getElementById('pageGrid') : document.getElementById('fileGrid'); Array.from(con.children).forEach(child => { const idx = parseInt(child.dataset.index); if (selectedIndices.has(idx)) child.classList.add('danger'); }); } else { c.classList.add('danger'); } };
+            d.onmouseleave = () => { const con = currentFileId ? document.getElementById('pageGrid') : document.getElementById('fileGrid'); Array.from(con.children).forEach(child => child.classList.remove('danger')); };
+            d.onmousedown=e=>e.stopPropagation(); 
+            d.onclick=e=>{e.stopPropagation(); if(!selectedIndices.has(i)){selectedIndices.clear();selectedIndices.add(i);} deleteSelectedItems();}; 
+            c.append(d,p,ft); if(b){const bg=document.createElement('div'); bg.className='page-badge'; bg.innerText=b; c.appendChild(bg);} 
+            return c; 
+        }
+
+        /* --- CONTEXT MENU LOGIC --- */
+        document.addEventListener('click', () => { document.getElementById('contextMenu').style.display = 'none'; });
+        
+        // Also allow right clicking empty space
+        document.getElementById('fileGrid').oncontextmenu = (e) => { if(e.target.id === 'fileGrid') { e.preventDefault(); showContextMenu(e, -1); } };
+        document.getElementById('pageGrid').oncontextmenu = (e) => { if(e.target.id === 'pageGrid') { e.preventDefault(); showContextMenu(e, -1); } };
+
+        function showContextMenu(e, index) {
+            // FIX: Lock in index immediately
+            activeContextIndex = index;
+            
+            const menu = document.getElementById('contextMenu');
+            menu.innerHTML = '';
+            
+            if (currentFileId) {
+                // Inside File View
+                const item1 = document.createElement('div');
+                item1.className = 'ctx-item';
+                item1.innerHTML = '<span>Insert Here</span>';
+                item1.onclick = () => { 
+                    document.getElementById('contextFileInput').click(); 
+                };
+                menu.appendChild(item1);
+
+                const item2 = document.createElement('div');
+                item2.className = 'ctx-item';
+                item2.innerHTML = '<span>Insert at Page...</span>';
+                item2.onclick = () => { openCustomInsertModal(activeContextIndex); };
+                menu.appendChild(item2);
+            } else {
+                // Main Page View
+                const item = document.createElement('div');
+                item.className = 'ctx-item';
+                item.innerHTML = '<span>Insert Files Here</span>';
+                item.onclick = () => { document.getElementById('contextFileInput').click(); };
+                menu.appendChild(item);
+            }
+
+            menu.style.display = 'block';
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            
+            if (e.clientX + menu.offsetWidth > window.innerWidth) menu.style.left = (e.clientX - menu.offsetWidth) + 'px';
+            if (e.clientY + menu.offsetHeight > window.innerHeight) menu.style.top = (e.clientY - menu.offsetHeight) + 'px';
+        }
+
+        async function handleContextFileSelect(fileList) {
+            if (!fileList.length) return;
+            const filesToAdd = Array.from(fileList);
+            document.getElementById('contextFileInput').value = ''; 
+
+            if(!(await checkFilesForSafety(filesToAdd))) return;
+
+            if (currentFileId) {
+                // Use activeContextIndex captured when menu opened
+                let insertIdx = (activeContextIndex === -1) ? 999999 : activeContextIndex;
+                await handleDirectNestedInsert(insertIdx, filesToAdd);
+            } else {
+                pushHistory();
+                let insertIdx = (activeContextIndex === -1) ? files.length : activeContextIndex;
+                const newFiles = [];
+                for(const f of filesToAdd) {
+                    if(f.type.startsWith('image/')) {
+                        try {
+                            const ab=await f.arrayBuffer(); const doc=await PDFLib.PDFDocument.create();
+                            let img; if(f.type==='image/png') img=await doc.embedPng(ab); else img=await doc.embedJpg(ab);
+                            const p=doc.addPage([img.width,img.height]); p.drawImage(img,{x:0,y:0,width:img.width,height:img.height});
+                            const bytes=await doc.save(); const blob=new Blob([bytes],{type:'application/pdf'});
+                            const jsDoc=await pdfjsLib.getDocument(await blob.arrayBuffer()).promise;
+                            newFiles.push({id:Date.now()+Math.random(), file:blob, name:f.name.replace(/\.[^.]+$/,"")+".pdf", pdfDoc:jsDoc, pageCount:1, pageOrder:[1], hasAnimated:false});
+                        } catch(e){console.error(e);}
+                    }
+                    else if(f.type==='application/pdf') {
+                        try {
+                            const ab=await f.arrayBuffer(); const doc=await pdfjsLib.getDocument(ab).promise;
+                            newFiles.push({id:Date.now()+Math.random(), file:f, name:f.name, pdfDoc:doc, pageCount:doc.numPages, pageOrder:Array.from({length:doc.numPages},(_,i)=>i+1), hasAnimated:false});
+                        } catch(e){console.error(e);}
+                    }
+                }
+                files.splice(insertIdx, 0, ...newFiles);
+                renderFiles();
+                updateGridVisuals();
+            }
+        }
+
+        // --- NEW CUSTOM INSERT MODAL LOGIC ---
+        function openCustomInsertModal(index) {
+            const modal = document.getElementById('customInsertModal');
+            modal.classList.add('active');
+            // Pre-fill page number (1-based index)
+            document.getElementById('customInsertPageInput').value = (index !== -1) ? index + 1 : 1;
+            // Reset file
+            customInsertFilesList = [];
+            document.getElementById('customFileLabel').innerText = "No file selected";
+        }
+
+        function closeCustomInsertModal() {
+            document.getElementById('customInsertModal').classList.remove('active');
+            document.getElementById('customInsertFileInput').value = '';
+        }
+
+        function handleCustomInsertFiles(fileList) {
+            if(!fileList.length) return;
+            customInsertFilesList = Array.from(fileList);
+            const label = customInsertFilesList.length === 1 ? customInsertFilesList[0].name : `${customInsertFilesList.length} files selected`;
+            document.getElementById('customFileLabel').innerText = label;
+        }
+
+        async function submitCustomInsert() {
+            if (customInsertFilesList.length === 0) return alert("Please select a file.");
+            
+            if(!(await checkFilesForSafety(customInsertFilesList))) return;
+
+            let val = parseInt(document.getElementById('customInsertPageInput').value);
+            if (isNaN(val)) val = 1;
+            let insertIdx = val - 1; 
+            if (insertIdx < 0) insertIdx = 0;
+            
+            handleDirectNestedInsert(insertIdx, customInsertFilesList);
+            closeCustomInsertModal();
+        }
+
+        async function handleDirectNestedInsert(insertIdx, filesList) {
+             const loader = document.createElement('div'); 
+             loader.className='loading-overlay'; loader.innerText='Inserting...';
+             document.body.appendChild(loader);
+             
+             try {
+                pushHistory();
+                const currentFileEntry = files.find(f => f.id === currentFileId);
+                const currentFileIndex = files.findIndex(f => f.id === currentFileId);
+                
+                if (insertIdx > currentFileEntry.pageOrder.length) insertIdx = currentFileEntry.pageOrder.length;
+                
+                const baseDoc = await PDFLib.PDFDocument.create();
+                const currentSourceBuffer = await currentFileEntry.file.arrayBuffer();
+                const currentSourceDoc = await PDFLib.PDFDocument.load(currentSourceBuffer);
+                const currentPagesIndices = currentFileEntry.pageOrder.map(p => p - 1);
+                const existingPages = await baseDoc.copyPages(currentSourceDoc, currentPagesIndices);
+                
+                let newPagesFlat = [];
+                for (const f of filesList) {
+                    let docToAdd;
+                    if (f.type.startsWith('image/')) {
+                        const tempDoc = await PDFLib.PDFDocument.create();
+                        const ab = await f.arrayBuffer();
+                        let img;
+                        if (f.type === 'image/png') img = await tempDoc.embedPng(ab); else img = await tempDoc.embedJpg(ab);
+                        const p = tempDoc.addPage([img.width, img.height]);
+                        p.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+                        docToAdd = tempDoc; 
+                    } else if (f.type === 'application/pdf') {
+                        const ab = await f.arrayBuffer();
+                        docToAdd = await PDFLib.PDFDocument.load(ab);
+                    }
+                    if (docToAdd) {
+                        const indices = docToAdd.getPageIndices();
+                        const copied = await baseDoc.copyPages(docToAdd, indices);
+                        newPagesFlat.push(...copied);
+                    }
+                }
+                
+                existingPages.splice(insertIdx, 0, ...newPagesFlat);
+                existingPages.forEach(p => baseDoc.addPage(p));
+                
+                const bytes = await baseDoc.save();
+                const newBlob = new Blob([bytes], { type: 'application/pdf' });
+                const newJsDoc = await pdfjsLib.getDocument(await newBlob.arrayBuffer()).promise;
+                
+                files[currentFileIndex] = {
+                    id: currentFileEntry.id, 
+                    file: newBlob, 
+                    name: currentFileEntry.name,
+                    pdfDoc: newJsDoc,
+                    pageCount: newJsDoc.numPages,
+                    pageOrder: Array.from({ length: newJsDoc.numPages }, (_, i) => i + 1), 
+                    hasAnimated: false,
+                    isNested: true
+                };
+                
+                renderPages(files[currentFileIndex], false);
+                
+             } catch(e) { console.error(e); alert("Insertion Failed"); }
+             finally { loader.remove(); }
+        }
+
+        // --- SCROLLING LOGIC ---
+        function startAutoScroll() {
+            if (autoScrollActive) return;
+            autoScrollActive = true;
+            autoScrollStartTime = performance.now();
+            lastAutoScrollTime = performance.now();
+            requestAnimationFrame(processAutoScroll);
+        }
+
+        function stopAutoScroll() {
+            autoScrollActive = false;
+            autoScrollDir = 0;
+        }
+
+        function processAutoScroll(timestamp) {
+            if (!autoScrollActive) return;
+
+            const dt = timestamp - lastAutoScrollTime;
+            lastAutoScrollTime = timestamp;
+
+            const elapsed = timestamp - autoScrollStartTime;
+            
+            // Get Grid Info
+            const con = currentFileId ? document.getElementById('pageGrid') : document.getElementById('fileGrid');
+            const firstCard = con.querySelector('.card');
+            const rowHeight = firstCard ? (firstCard.offsetHeight + 20) : 280; 
+
+            // Calculate Target Duration per Row (ms)
+            const k = 0.0015; 
+            let currentDurationPerRow = 200 + (1800 * Math.exp(-k * elapsed));
+            
+            // Speed in px/ms
+            const speed = rowHeight / currentDurationPerRow;
+            
+            // Scroll Delta
+            const moveY = speed * dt * autoScrollDir;
+            
+            document.querySelector('.grid-container').scrollBy(0, moveY);
+            
+            if (lastMouseEvent) {
+                updateInternalDrag(lastMouseEvent, true); 
+            }
+
+            requestAnimationFrame(processAutoScroll);
+        }
+
+        // --- UPDATED START DRAG ---
+        function startInternalDrag(e) {
+            isInternalDrag = true;
+            document.body.classList.add('dragging-active'); // DISABLE HOVER
+            stopAutoScroll();
+
+            if(!selectedIndices.has(dragSrcIndex)) {
+                if(!(e.ctrlKey||e.metaKey)) selectedIndices.clear();
+                selectedIndices.add(dragSrcIndex);
+                updateSelectionVisuals();
+            }
+            createGhostStack(e.clientX, e.clientY);
+            
+            const con = currentFileId ? document.getElementById('pageGrid') : document.getElementById('fileGrid');
+            
+            Array.from(con.children).forEach(c => {
+                const idx = parseInt(c.dataset.index);
+                if (selectedIndices.has(idx)) {
+                    c.classList.add('dragging-source');
+                }
+            });
+
+            insertionMarker = document.createElement('div');
+            insertionMarker.className = 'insertion-marker';
+            
+            // Add internal bar visual (for when it is a bar, not a wrapper)
+            const barVisual = document.createElement('div');
+            barVisual.className = 'marker-bar-visual';
+            insertionMarker.appendChild(barVisual);
+            
+            // --- THE FLASH FIX START ---
+            // 1. Start completely invisible
+            insertionMarker.style.opacity = '0';
+            
+            // 2. Append to DOM so dimensions can be calculated
+            const firstCard = con.querySelector('.card');
+            const h = firstCard ? firstCard.offsetHeight : 200;
+            insertionMarker.style.height = (h * 0.66) + 'px';
+            
+            con.appendChild(insertionMarker);
+            
+            // 3. Force a browser Reflow (Paint). 
+            void insertionMarker.offsetWidth;
+            
+            // 4. Make it visible in the NEXT animation frame.
+            insertionMarker.style.display = 'block';
+            
+            // CALL UPDATE IMMEDIATELY TO SET POSITION CORRECTLY
+            updateInternalDrag(e, true);
+            
+            requestAnimationFrame(() => {
+                 insertionMarker.style.opacity = '1';
+            });
+            // --- THE FLASH FIX END ---
+        }
+        
+        // --- UPDATED UPDATE DRAG (Includes Scroll Trigger) ---
+        function updateInternalDrag(e, skipScrollCheck) { 
+            lastMouseEvent = e; 
+            
+            ghostContainer.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+            
+            if (!skipScrollCheck) {
+                const threshold = 80;
+                if (e.clientY < threshold) {
+                    if (autoScrollDir !== -1) {
+                        autoScrollDir = -1;
+                        startAutoScroll();
+                    }
+                } else if (e.clientY > window.innerHeight - threshold) {
+                    if (autoScrollDir !== 1) {
+                        autoScrollDir = 1;
+                        startAutoScroll();
+                    }
+                } else {
+                    stopAutoScroll();
+                }
+            }
+
+            const con = currentFileId ? document.getElementById('pageGrid') : document.getElementById('fileGrid');
+            
+            const cards = [...con.querySelectorAll('.card:not(.insertion-marker)')];
+            
+            let closestDist = Infinity;
+            let targetCard = null;
+            let isAfter = false;
+
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const dx = e.clientX - (rect.left + rect.width / 2);
+                const dy = e.clientY - (rect.top + rect.height / 2);
+                const dist = dx*dx + dy*dy;
+                
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    targetCard = card;
+                    isAfter = dx > 0;
+                }
+            });
+            
+            let idx = -1;
+            
+            if (targetCard) {
+                // If Hovering SOURCE (The grayed out file)
+                if (targetCard.classList.contains('dragging-source')) {
+                    // Match position exactly to the card
+                    insertionMarker.style.left = targetCard.offsetLeft + 'px';
+                    insertionMarker.style.top = targetCard.offsetTop + 'px';
+                    insertionMarker.style.width = targetCard.offsetWidth + 'px';
+                    insertionMarker.style.height = targetCard.offsetHeight + 'px';
+                    
+                    // Triggers the CSS .wrapping class (The Glow/Grow)
+                    insertionMarker.classList.add('wrapping');
+                    
+                    dropIndex = parseInt(targetCard.dataset.index); 
+                } else {
+                    // Standard Bar Logic
+                    insertionMarker.classList.remove('wrapping');
+                    
+                    const targetIndex = parseInt(targetCard.dataset.index);
+                    idx = isAfter ? targetIndex + 1 : targetIndex;
+
+                    let targetLeft = targetCard.offsetLeft;
+                    const gap = 20; 
+                    if (isAfter) { targetLeft += targetCard.offsetWidth + (gap/2); } else { targetLeft -= (gap/2); }
+                    
+                    const markerX = isAfter ? (targetCard.offsetLeft + targetCard.offsetWidth + 8) : (targetCard.offsetLeft - 12);
+                    
+                    const cardHeight = targetCard.offsetHeight;
+                    const h = cardHeight * 0.66;
+                    const markerY = targetCard.offsetTop + (cardHeight - h) / 2;
+                    
+                    // Update Marker Style to BAR
+                    insertionMarker.style.width = '4px';
+                    insertionMarker.style.height = h + 'px';
+                    insertionMarker.style.left = markerX + 'px';
+                    insertionMarker.style.top = markerY + 'px';
+                    
+                    dropIndex = idx;
+                }
+            } else if (cards.length === 0) {
+                dropIndex = 0;
+                insertionMarker.style.left = '20px';
+                insertionMarker.style.top = '20px';
+            }
+        }
+
+        // --- UPDATED END DRAG: NO RELOAD ---
+        function endInternalDrag(e) { 
+            stopAutoScroll();
+            document.body.classList.remove('dragging-active'); // ENABLE HOVER
+
+            const con = currentFileId ? document.getElementById('pageGrid') : document.getElementById('fileGrid');
+            
+            ghostContainer.innerHTML = '';
+            Array.from(con.children).forEach(c => c.classList.remove('dragging-source'));
+            if (insertionMarker) insertionMarker.remove();
+            insertionMarker = null;
+
+            if (dropIndex === -1) return;
+
+            // Check if dropped on self (no move)
+            if (selectedIndices.has(dropIndex)) return;
+
+            pushHistory();
+            
+            // --- DOM MANIPULATION FOR INSTANT MOVE (NO RELOAD) ---
+            const sorted = Array.from(selectedIndices).sort((a,b)=>a-b);
+            const domCards = Array.from(con.children).filter(c=>c.classList.contains('card'));
+            
+            let movedData = [];
+            
+            if(!currentFileId) { 
+                let adjust = 0;
+                sorted.forEach(i => { if (i < dropIndex) adjust++; });
+                const finalDest = Math.max(0, dropIndex - adjust);
+
+                for(let i=sorted.length-1; i>=0; i--) { 
+                    movedData.unshift(files[sorted[i]]); 
+                    files.splice(sorted[i],1); 
+                } 
+                files.splice(finalDest,0,...movedData); 
+            } else { 
+                let adjust = 0;
+                sorted.forEach(i => { if (i < dropIndex) adjust++; });
+                const finalDest = Math.max(0, dropIndex - adjust);
+
+                const f=files.find(x=>x.id===currentFileId); 
+                for(let i=sorted.length-1; i>=0; i--) { 
+                    movedData.unshift(f.pageOrder[sorted[i]]); 
+                    f.pageOrder.splice(sorted[i],1); 
+                } 
+                f.pageOrder.splice(finalDest,0,...movedData); 
+            }
+
+            // --- INSTANT DOM REORDERING ---
+            const fragment = document.createDocumentFragment();
+            const nodesToMove = sorted.map(idx => con.querySelector(`.card[data-index="${idx}"]`));
+            
+            // Remove them first
+            nodesToMove.forEach(n => n.remove());
+            nodesToMove.forEach(n => fragment.appendChild(n));
+            
+            // Calculate insertion reference in CURRENT DOM (minus moved items)
+            const remaining = Array.from(con.querySelectorAll('.card'));
+            
+            let refIndex = 0;
+            let originalCount = 0;
+            
+            // Count how many non-moved items exist before dropIndex
+            for(let i=0; i<dropIndex; i++) {
+                if (!selectedIndices.has(i)) refIndex++;
+                originalCount++;
+            }
+            
+            if (refIndex >= remaining.length) {
+                con.appendChild(fragment);
+            } else {
+                con.insertBefore(fragment, remaining[refIndex]);
+            }
+
+            // RE-INDEX DOM & UPDATE TEXT ONLY
+            Array.from(con.children).forEach((child, i) => {
+                child.dataset.index = i;
+                // Re-bind mouse down just in case
+                child.onmousedown = (e) => onCardMouseDown(e, i);
+                
+                // Re-bind Context Menu (IMPORTANT FIX)
+                child.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    showContextMenu(e, i);
+                };
+            });
+            
+            if (currentFileId) {
+                resequencePageNumbers(); // Just update text
+            }
+
+            selectedIndices.clear();
+            updateGridVisuals();
+            dropIndex = -1;
+        }
+        
+        function resequencePageNumbers() {
+            const con = document.getElementById('pageGrid');
+            Array.from(con.children).forEach((child, i) => {
+                const footer = child.querySelector('.card-footer span');
+                if (footer) footer.innerText = `Page ${i+1}`;
+            });
+        }
+
+        function getClosestCard(container, x, y) { const cards = [...container.querySelectorAll('.card:not(.dragging-source):not(.placeholder)')]; return cards.reduce((closest, child) => { const box = child.getBoundingClientRect(); const centerX = box.left + box.width / 2; const centerY = box.top + box.height / 2; const dist = Math.hypot(x - centerX, y - centerY); if (dist < closest.dist) return { dist: dist, element: child, box: box }; return closest; }, { dist: Number.POSITIVE_INFINITY, element: null, box: null }); }
+
+        async function handleFileSelect(fileList) {
+            if (fileList.length === 0) return;
+            if (currentFileId) {
+                pendingFiles = Array.from(fileList);
+                document.getElementById('uploadModal').classList.add('active');
+                return;
+            }
+            await processFilesToAdd(Array.from(fileList));
+        }
+
+        async function processFilesToAdd(list) {
+            const isFirst = files.length===0; if(list.length) pushHistory();
+            for(const f of list) {
+                if(f.type.startsWith('image/')) {
+                    try {
+                        const ab=await f.arrayBuffer(); const doc=await PDFLib.PDFDocument.create();
+                        let img; if(f.type==='image/png') img=await doc.embedPng(ab); else img=await doc.embedJpg(ab);
+                        const p=doc.addPage([img.width,img.height]); p.drawImage(img,{x:0,y:0,width:img.width,height:img.height});
+                        const bytes=await doc.save(); const blob=new Blob([bytes],{type:'application/pdf'});
+                        const jsDoc=await pdfjsLib.getDocument(await blob.arrayBuffer()).promise;
+                        files.push({id:Date.now()+Math.random(), file:blob, name:f.name.replace(/\.[^.]+$/,"")+".pdf", pdfDoc:jsDoc, pageCount:1, pageOrder:[1], hasAnimated:false});
+                    } catch(e){console.error(e);} continue;
+                }
+                if(f.type!=='application/pdf') continue;
+                try {
+                    const ab=await f.arrayBuffer(); const doc=await pdfjsLib.getDocument(ab).promise;
+                    files.push({id:Date.now()+Math.random(), file:f, name:f.name, pdfDoc:doc, pageCount:doc.numPages, pageOrder:Array.from({length:doc.numPages},(_,i)=>i+1), hasAnimated:false});
+                } catch(e){console.error(e);}
+            }
+            if(isFirst && files.length) {
+                const baseName = files[0].name.replace(/\.[^.]+$/, "");
+                defaultFilename = `${baseName} merged.pdf`;
+                document.getElementById('filenameInput').value = defaultFilename;
+                document.title = defaultFilename;
+            }
+            document.getElementById('fileInput').value=''; 
+            if(!currentFileId) { renderFiles(); updateGridVisuals(); }
+        }
+
+        function showPageSelect() {
+            document.getElementById('uploadModal').classList.remove('active');
+            const selectModal = document.getElementById('pageSelectModal');
+            selectModal.classList.add('active');
+            const hasSelection = selectedIndices.size > 0;
+            const btnSel = document.getElementById('btnInsertAtSelection');
+            if (hasSelection) { btnSel.disabled = false; btnSel.title = ""; } else { btnSel.disabled = true; btnSel.title = "No page selected"; }
+        }
+
+        function cancelUpload() {
+            document.getElementById('uploadModal').classList.remove('active');
+            document.getElementById('pageSelectModal').classList.remove('active');
+            pendingFiles = [];
+            document.getElementById('fileInput').value=''; 
+        }
+
+        function resolveUpload(mode, useSelection) {
+            if (mode === 'main') {
+                document.getElementById('uploadModal').classList.remove('active');
+                processFilesToAdd(pendingFiles);
+                pendingFiles = [];
+            } else if (mode === 'nested') {
+                handleNestedMerge(useSelection);
+            }
+        }
+
+        async function handleNestedMerge(useSelection) {
+            const loader = document.getElementById('nestedLoader');
+            loader.style.display = 'flex';
+            try {
+                let insertIdx;
+                if (useSelection) {
+                    const sorted = Array.from(selectedIndices).sort((a,b)=>a-b);
+                    insertIdx = sorted[0]; 
+                } else {
+                    let val = parseInt(document.getElementById('insertPageInput').value);
+                    if (isNaN(val)) val = 1;
+                    insertIdx = val - 1;
+                    if (insertIdx < 0) insertIdx = 0;
+                    const currentLen = files.find(f => f.id === currentFileId).pageOrder.length;
+                    if (insertIdx > currentLen) insertIdx = currentLen;
+                }
+                
+                pushHistory();
+                const currentFileEntry = files.find(f => f.id === currentFileId);
+                const currentFileIndex = files.findIndex(f => f.id === currentFileId);
+                const baseDoc = await PDFLib.PDFDocument.create();
+                const currentSourceBuffer = await currentFileEntry.file.arrayBuffer();
+                const currentSourceDoc = await PDFLib.PDFDocument.load(currentSourceBuffer);
+                const currentPagesIndices = currentFileEntry.pageOrder.map(p => p - 1);
+                const existingPages = await baseDoc.copyPages(currentSourceDoc, currentPagesIndices);
+                
+                let newPagesFlat = [];
+                for (const f of pendingFiles) {
+                    let docToAdd;
+                    if (f.type.startsWith('image/')) {
+                        const tempDoc = await PDFLib.PDFDocument.create();
+                        const ab = await f.arrayBuffer();
+                        let img;
+                        if (f.type === 'image/png') img = await tempDoc.embedPng(ab); else img = await tempDoc.embedJpg(ab);
+                        const p = tempDoc.addPage([img.width, img.height]);
+                        p.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+                        docToAdd = tempDoc; 
+                    } else if (f.type === 'application/pdf') {
+                        const ab = await f.arrayBuffer();
+                        docToAdd = await PDFLib.PDFDocument.load(ab);
+                    }
+                    if (docToAdd) {
+                        const indices = docToAdd.getPageIndices();
+                        const copied = await baseDoc.copyPages(docToAdd, indices);
+                        newPagesFlat.push(...copied);
+                    }
+                }
+                
+                existingPages.splice(insertIdx, 0, ...newPagesFlat);
+                existingPages.forEach(p => baseDoc.addPage(p));
+                const bytes = await baseDoc.save();
+                const newBlob = new Blob([bytes], { type: 'application/pdf' });
+                const newJsDoc = await pdfjsLib.getDocument(await newBlob.arrayBuffer()).promise;
+                
+                files[currentFileIndex] = {
+                    id: currentFileEntry.id, 
+                    file: newBlob, 
+                    name: currentFileEntry.name,
+                    pdfDoc: newJsDoc,
+                    pageCount: newJsDoc.numPages,
+                    pageOrder: Array.from({ length: newJsDoc.numPages }, (_, i) => i + 1), 
+                    hasAnimated: false,
+                    isNested: true
+                };
+                
+                document.getElementById('pageSelectModal').classList.remove('active');
+                pendingFiles = [];
+                renderPages(files[currentFileIndex], false);
+                document.getElementById('fileInput').value=''; 
+            } catch (err) { console.error(err); alert("Error merging inside file."); } finally { loader.style.display = 'none'; }
+        }
+
+        function renderFiles(skip){ 
+            renderSessionId++;
+            const currentSession = renderSessionId;
+            const con=document.getElementById('fileGrid'); con.innerHTML=''; 
+            files.forEach((f,i)=>{ 
+                const c=createCard(f.name,f.pageCount===1?'1 Pg':`${f.pageCount} Pgs`,i); 
+                c.dataset.id=f.id; 
+                c.ondblclick=()=>openPageView(f.id); 
+                con.appendChild(c); 
+                if(f.pageOrder.length) renderThumbnailToCanvas(f,f.pageOrder[0],c.querySelector('.preview-box'),skip||f.hasAnimated, currentSession); 
+                f.hasAnimated=true; 
+            }); 
+            updateSelectionVisuals(); updateGridVisuals(); 
+        }
+
+        function renderPages(f,skip){ 
+            renderSessionId++;
+            const currentSession = renderSessionId;
+            const con=document.getElementById('pageGrid'); con.innerHTML=''; 
+            f.pageOrder.forEach((p,i)=>{ 
+                const c=createCard(`Page ${p}`,'',i); 
+                con.appendChild(c); 
+                renderThumbnailToCanvas(f,p,c.querySelector('.preview-box'),skip, currentSession); 
+            }); 
+            updateSelectionVisuals(); updateGridVisuals(); 
+        }
+
+        function handleCardClick(e,i) { if(e.ctrlKey||e.metaKey){if(selectedIndices.has(i))selectedIndices.delete(i);else selectedIndices.add(i);lastSelectedIndex=i;}else if(e.shiftKey&&lastSelectedIndex!==null){const s=Math.min(lastSelectedIndex,i),en=Math.max(lastSelectedIndex,i);selectedIndices.clear();for(let k=s;k<=en;k++)selectedIndices.add(k);}else{selectedIndices.clear();selectedIndices.add(i);lastSelectedIndex=i;} updateSelectionVisuals(); }
+        function updateSelectionVisuals() { const con=currentFileId?document.getElementById('pageGrid'):document.getElementById('fileGrid'); Array.from(con.children).forEach(c=>{ if(c===dropIndex)return; const idx=parseInt(c.dataset.index); if(selectedIndices.has(idx)) c.classList.add('selected'); else c.classList.remove('selected'); }); }
+        function createGhostStack(sx,sy) { ghostContainer.innerHTML=''; ghostContainer.style.transform=`translate(${sx}px, ${sy}px)`; const con=currentFileId?document.getElementById('pageGrid'):document.getElementById('fileGrid'); const cards=Array.from(con.children).filter(c=>c.classList.contains('card')); let count=0; const total=selectedIndices.size; const step=Math.min(3, 15/(total-1||1)); const ref=cards[0]; const w=ref?ref.offsetWidth:150; const h=ref?ref.offsetHeight:210; selectedIndices.forEach(idx=>{ const orig=con.querySelector(`.card[data-index="${idx}"]`); if(!orig)return; const clone=document.createElement('div'); clone.className='ghost-card'; clone.style.width=w+'px'; clone.style.height=h+'px'; const cvs=orig.querySelector('canvas'); if(cvs){const cc=document.createElement('canvas'); cc.width=cvs.width; cc.height=cvs.height; cc.getContext('2d').drawImage(cvs,0,0); clone.appendChild(cc);} else clone.style.background='#444'; const r=orig.getBoundingClientRect(); clone.style.transform=`translate(${r.left-sx}px, ${r.top-sy}px)`; ghostContainer.appendChild(clone); requestAnimationFrame(()=>{const rot=(count*step)-((total-1)*step/2); clone.style.transform=`translate(0,0) rotate(${rot}deg)`;}); count++; }); }
+        
+        function deleteSelectedItems() { 
+            pushHistory(); 
+            const sorted = Array.from(selectedIndices).sort((a,b)=>b-a);
+            const con = currentFileId ? document.getElementById('pageGrid') : document.getElementById('fileGrid');
+            const allCards = Array.from(con.children);
+            if(currentFileId){ const f=files.find(x=>x.id===currentFileId); sorted.forEach(i=>f.pageOrder.splice(i,1)); } else { sorted.forEach(i=>files.splice(i,1)); }
+            sorted.forEach(idx => { const card = con.querySelector(`.card[data-index="${idx}"]`); if(card) card.remove(); });
+            Array.from(con.children).forEach((c, i) => {
+                c.dataset.index = i;
+                c.onmousedown = (e) => onCardMouseDown(e, i);
+                const d = c.querySelector('.delete-btn');
+                if(d) {
+                    d.onclick = (e)=>{e.stopPropagation(); if(!selectedIndices.has(i)){selectedIndices.clear();selectedIndices.add(i);} deleteSelectedItems();};
+                    d.onmouseenter = () => { if (selectedIndices.has(i)) { Array.from(con.children).forEach(child => { if (selectedIndices.has(parseInt(child.dataset.index))) child.classList.add('danger'); }); } else { c.classList.add('danger'); } };
+                }
+            });
+            if (currentFileId) resequencePageNumbers();
+            selectedIndices.clear(); 
+            lastSelectedIndex=null; 
+            updateGridVisuals();
+        }
+        
+        async function renderThumbnailToCanvas(f, p, con, imm, sessionId) { 
+            try {
+                if (sessionId && sessionId !== renderSessionId) return;
+                const pg = await f.pdfDoc.getPage(p);
+                if (sessionId && sessionId !== renderSessionId) return;
+                
+                const vp = pg.getViewport({scale: 300 / pg.getViewport({scale: 1}).width});
+                const c = document.createElement('canvas');
+                c.width = vp.width; c.height = vp.height;
+                
+                if (imm) c.classList.add('immediate');
+                
+                await pg.render({canvasContext: c.getContext('2d'), viewport: vp}).promise;
+                
+                if (sessionId && sessionId !== renderSessionId) return;
+                
+                con.innerHTML = '';
+                con.appendChild(c);
+                if (!imm) requestAnimationFrame(() => c.classList.add('loaded'));
+            } catch (e) {
+                con.innerHTML = '<span>ERR</span>';
+            } 
+        }
+
+        function openPageView(id) { 
+            currentFileId=id; 
+            const f=files.find(x=>x.id===id); 
+            if(!f)return; 
+            selectedIndices.clear(); 
+            document.getElementById('editingFileName').innerText=f.name; 
+            document.getElementById('fileViewWrapper').className='view-wrapper hidden'; 
+            setTimeout(()=>{
+                document.getElementById('pageViewWrapper').className='view-wrapper active'; 
+                renderPages(f,false);
+            }, 150); 
+        }
+
+        function closePageView() { 
+            renderSessionId++; // CANCEL ALL RENDERS
+            document.getElementById('pageViewWrapper').className='view-wrapper hidden'; 
+            selectedIndices.clear(); 
+            setTimeout(()=>{
+                document.getElementById('fileViewWrapper').className='view-wrapper active'; 
+                currentFileId=null; 
+                renderFiles(true);
+            }, 150); 
+        }
+
+        function updateCardSize(v) { document.documentElement.style.setProperty('--card-size', v+'px'); }
+        updateCardSize(180);
+    </script>
+</body>
+</html>
