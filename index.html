@@ -65,7 +65,10 @@
             gap: 10px;
             color: var(--accent-green);
             margin-bottom: 20px;
+            cursor: pointer;
+            transition: transform 0.1s;
         }
+        .logo-group:active { transform: scale(0.97); }
 
         .logo-group h2 { margin: 0; font-size: 18px; letter-spacing: 2px; font-weight: 900; }
 
@@ -86,6 +89,7 @@
             gap: 8px;
             width: 100%;
             height: 45px;
+            white-space: nowrap;
         }
 
         .control-btn:hover { background-color: var(--pink-hover); transform: translateY(-2px); }
@@ -152,7 +156,7 @@
         .filename-input-display:focus { border-bottom-color: var(--accent-green); background-color: #222; padding-left: 10px; }
 
         /* HELP BOX STYLES */
-        .help-container { position: relative; display: inline-block; cursor: help; margin-left: 10px; }
+        .help-container { position: relative; display: inline-block; cursor: help; margin-left: 10px; z-index: 20000; }
         .help-icon { 
             width: 20px; height: 20px; 
             border: 1px solid var(--accent-green); 
@@ -180,7 +184,7 @@
             left: 50%;
             transform: translateX(-50%);
             border: 1px solid #444; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9); 
             font-size: 12px; 
             line-height: 1.5; 
             pointer-events: none; 
@@ -225,14 +229,12 @@
         body:not(.dragging-active) .card:hover {
             border-color: var(--pastel-pink); 
             transform: translateY(-5px);
-            /* Soft pink glow instead of black shadow */
             box-shadow: 0 8px 25px rgba(251, 207, 232, 0.15); 
         }
         
         .card.selected {
             border-color: var(--pastel-pink); 
             background-color: var(--card-selected-bg);
-            /* "Expands" using a stacked outline shadow */
             box-shadow: 0 0 0 2px var(--pastel-pink), 0 0 20px rgba(251, 207, 232, 0.4); 
             transform: translateY(-2px);
         }
@@ -370,7 +372,7 @@
         .page-badge { position: absolute; bottom: 40px; left: 5px; background-color: rgba(0,0,0,0.7); color: var(--accent-green); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 5; pointer-events: none; }
         
         /* HEADER BADGE INDICATOR */
-        .header-badge { position: absolute; top: 5px; right: 35px; width: 24px; height: 24px; background-color: #333; border: 1px solid var(--accent-green); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 10px; font-weight: bold; z-index: 4; box-shadow: 0 2px 5px rgba(0,0,0,0.5); pointer-events: none; }
+        .header-badge { position: absolute; top: 5px; right: 35px; width: auto; height: 24px; padding: 0 6px; background-color: #333; border: 1px solid var(--accent-green); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 10px; font-weight: bold; z-index: 4; box-shadow: 0 2px 5px rgba(0,0,0,0.5); pointer-events: none; }
 
         /* --- EDIT SYMBOL --- */
         .edit-page-btn { position: absolute; top: 5px; left: 5px; width: 24px; height: 24px; background-color: var(--accent-green); border-radius: 4px; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 6; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: transform 0.1s; }
@@ -410,6 +412,92 @@
         
         .loading-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; color: var(--accent-green); font-weight: bold; z-index: 5; }
 
+        /* --- EXPORT ANIMATION OVERLAY --- */
+        .export-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 99999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .export-overlay.active { opacity: 1; pointer-events: all; }
+        .loader-wrapper {
+            position: relative; width: 100px; height: 100px;
+            display: flex; justify-content: center; align-items: center;
+            animation: spinContainer 4s linear infinite;
+        }
+        @keyframes spinContainer { 100% { transform: rotate(360deg); } }
+        
+        .loader-container { position: relative; width: 100px; height: 40px; }
+        .export-ball {
+            position: absolute; top: 0; width: 40px; height: 40px;
+            border-radius: 50%; background: var(--accent-green);
+        }
+        .ball-left {
+            left: 0;
+            animation: suckLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+        }
+        .ball-right {
+            right: 0;
+            animation: suckRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+            background: rgba(74, 222, 128, 0.7);
+        }
+        @keyframes suckLeft {
+            0% { transform: translateX(0) scale(1); }
+            100% { transform: translateX(30px) scale(0.6); }
+        }
+        @keyframes suckRight {
+            0% { transform: translateX(0) scale(1); }
+            100% { transform: translateX(-30px) scale(0.6); }
+        }
+        
+        .export-overlay.success .loader-wrapper { display: none; }
+        
+        .success-svg-wrapper {
+            display: none;
+            width: 80px; height: 80px;
+            position: absolute;
+        }
+        .export-overlay.success .success-svg-wrapper { display: flex; align-items: center; justify-content: center; }
+        
+        /* THE REPAIRED EXPORT SVG ANIMATION */
+        .success-svg {
+            width: 100%; height: 100%;
+            animation: swooshExport 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        .success-svg .doc-shape {
+            fill: transparent; transition: fill 0.3s;
+        }
+        .success-svg .doc-fold {
+            fill: transparent; transition: fill 0.3s;
+        }
+        /* Thick cutout stroke to separate plus from the background pink shape */
+        .success-svg .plus-bg { stroke: rgba(0,0,0,0.85); stroke-width: 6; }
+        
+        .export-overlay.success .success-svg .doc-shape {
+            animation: fillDoc 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .export-overlay.success .success-svg .doc-fold {
+            animation: fillFold 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @keyframes fillDoc {
+            0%, 49% { fill: transparent; color: var(--accent-green); }
+            50%, 100% { fill: var(--pastel-pink); color: var(--pastel-pink); }
+        }
+        @keyframes fillFold {
+            0%, 49% { fill: transparent; }
+            50%, 100% { fill: #f472b6; } /* Darker pink for the fold */
+        }
+        
+        @keyframes swooshExport {
+            0% { transform: scale(0.2); filter: blur(0); }
+            30% { transform: scale(1.1); filter: blur(0); }
+            50% { transform: scale(1); filter: blur(0); }
+            65% { transform: scale(1) translateX(0) skewX(0); filter: blur(0); opacity: 1; }
+            100% { transform: scale(0.8) translateX(150vw) skewX(-20deg); filter: blur(8px); opacity: 0; }
+        }
+
         /* -- HEADER EDITOR OVERHAUL -- */
         .editor-workspace { 
             display: grid; 
@@ -432,49 +520,76 @@
         }
         .editor-active .editor-canvas-container { opacity: 1; }
         
-        .draggable-text { position: absolute; cursor: text; border: 2px solid transparent; padding: 5px; background: transparent; color: black; caret-color: black; font-family: 'Times New Roman', serif; min-width: 50px; min-height: 20px; white-space: pre; font-size: 14px; user-select: text; }
+        .global-ghost-text { 
+            position: absolute; 
+            opacity: 0.4; 
+            pointer-events: none; 
+            z-index: 1; 
+            white-space: pre-wrap; 
+        }
+
+        /* FIXED CURSOR BUG: Changed white-space from pre to pre-wrap */
+        .draggable-text { position: absolute; cursor: text; border: 2px solid transparent; padding: 5px 8px; background: transparent; color: black; caret-color: black; font-family: 'Times New Roman', serif; min-width: 50px; min-height: 20px; white-space: pre-wrap; font-size: 14px; user-select: text; z-index: 10; }
         .draggable-text::after { content: ''; position: absolute; inset: 0; border: 1px dashed var(--accent-green); pointer-events: none; }
         .draggable-text:focus { outline: none; border: 2px solid var(--pastel-pink); background: rgba(251, 207, 232, 0.1); }
         .draggable-text:focus::after { display: none; }
         .draggable-text.can-drag { cursor: move; }
         .draggable-text.is-tabbed { display: grid; grid-template-columns: 1fr auto 1fr; width: 100% !important; left: 0 !important; align-items: center; }
-        .draggable-text.is-tabbed > span { white-space: pre; pointer-events: auto; }
+        .draggable-text.is-tabbed > span { white-space: pre-wrap; pointer-events: auto; }
         .header-slot { outline: none; min-width: 10px; }
         .header-slot.left { justify-self: start; text-align: left; }
         .header-slot.center { justify-self: center; text-align: center; }
         .header-slot.right { justify-self: end; text-align: right; }
         .guide-line { position: absolute; background-color: #00d2ff; pointer-events: none; z-index: 9999; display: none; width: 1px; height: 100%; top: 0; }
         .guide-line.horizontal { width: 100%; height: 1px; left: 0; top: auto; }
-        .editor-toolbar { width: 100%; height: 60px; background: var(--input-bg); border-bottom: 1px solid #444; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 50; flex-shrink: 0; }
-        .tool-group { display: flex; gap: 10px; align-items: center; }
         
-        /* ENLARGED INPUTS AND PICKERS */
+        .editor-toolbar { 
+            width: 100%; min-height: 60px; background: var(--input-bg); 
+            border-bottom: 1px solid #444; display: flex; align-items: center; 
+            justify-content: space-between; padding: 10px 20px; z-index: 50; 
+            flex-shrink: 0; flex-wrap: wrap; gap: 10px; overflow: visible; 
+        }
+        .tool-group { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+        
+        .toolbar-btn { white-space: nowrap !important; width: auto !important; flex-shrink: 0; padding: 8px 16px !important; font-size: 13px !important; }
         .range-input { width: 80px; background: #333; border: 1px solid #555; color: white; padding: 6px 10px; border-radius: 4px; height: 32px; font-size: 12px; }
         .range-input:disabled { opacity: 0.5; color: #aaa; cursor: not-allowed; }
-        .style-select { background: #333; border: 1px solid #555; color: white; padding: 6px 10px; border-radius: 4px; font-size: 12px; height: 32px; }
-        .style-num { width: 55px; background: #333; border: 1px solid #555; color: white; padding: 6px 10px; border-radius: 4px; font-size: 12px; height: 32px; }
+        .style-select { background: #333; border: 1px solid #555; color: white; padding: 6px 10px; border-radius: 4px; font-size: 12px; height: 32px; flex-shrink: 0; }
+        .style-num { width: 55px; background: #333; border: 1px solid #555; color: white; padding: 6px 10px; border-radius: 4px; font-size: 12px; height: 32px; flex-shrink: 0; }
         
-        /* CUSTOM COLOR PICKER FIX */
-        input[type="color"].style-color { 
-            width: 50px; 
-            height: 32px; 
-            border: 2px solid #555; 
-            border-radius: 6px; 
-            padding: 2px; 
-            background-color: #333;
-            cursor: pointer;
-            transition: border-color 0.2s;
+        /* THEME COLOR PICKER POPOUT */
+        .custom-color-wrapper { position: relative; flex-shrink: 0; }
+        .color-swatch-btn {
+            width: 32px; height: 32px; border: 2px solid var(--accent-green);
+            border-radius: 50%; cursor: pointer; transition: transform 0.1s, border-color 0.2s;
         }
-        input[type="color"].style-color:hover { border-color: var(--pastel-pink); }
-        input[type="color"].style-color::-webkit-color-swatch-wrapper { padding: 0; }
-        input[type="color"].style-color::-webkit-color-swatch { border: none; border-radius: 3px; }
-        input[type="color"].style-color::-moz-color-swatch { border: none; border-radius: 3px; }
+        .color-swatch-btn:hover { transform: scale(1.1); border-color: var(--pastel-pink); }
+        .color-picker-popout {
+            position: absolute; top: 40px; left: 50%; transform: translateX(-50%); background: var(--card-bg);
+            border: 1px solid var(--accent-green); border-radius: 8px; padding: 10px;
+            display: none; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+            z-index: 100; width: 140px;
+        }
+        .color-picker-popout.active { display: flex; }
+        .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .c-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 1px solid #555; transition: transform 0.1s; }
+        .c-swatch:hover { transform: scale(1.2); border-color: white; }
+        .hex-input { background: #333; border: 1px solid #555; color: white; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 11px; width: 100%; text-align: center; }
+        
+        /* Native Advanced Color Integration */
+        .advanced-color-label {
+            display: block; width: 100%; text-align: center; height: 24px; line-height: 16px;
+            font-size: 10px; padding: 4px; cursor: pointer; box-sizing: border-box;
+            background-color: transparent; border: 2px solid var(--accent-green); color: var(--accent-green);
+            border-radius: 4px; font-weight: bold; text-transform: uppercase;
+        }
+        .advanced-color-label:hover { background-color: rgba(74, 222, 128, 0.1); }
 
         /* --- LOCAL HEADER POPOUT --- */
         .local-headers-popout {
             position: absolute;
-            left: 260px; /* Sidebar width + gap */
-            top: 250px; /* Approx below merge button */
+            left: 260px;
+            top: 250px; 
             width: 250px;
             max-height: 300px;
             background-color: #222;
@@ -518,6 +633,23 @@
     </style>
 </head>
 <body>
+
+    <div id="exportOverlay" class="export-overlay">
+        <div class="loader-wrapper">
+            <div class="loader-container" id="exportLoader">
+                <div class="export-ball ball-left"></div>
+                <div class="export-ball ball-right"></div>
+            </div>
+        </div>
+        <div class="success-svg-wrapper">
+            <svg class="success-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path class="doc-shape" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline class="doc-fold" points="14 2 14 8 20 8"></polyline>
+                <path class="plus-bg" d="M14 19h6M17 16v6"></path>
+                <path d="M14 19h6M17 16v6"></path>
+            </svg>
+        </div>
+    </div>
 
     <div id="ghostContainer"></div>
     <div id="toast" class="toast">Action Undone</div>
@@ -591,7 +723,7 @@
     </div>
 
     <div class="sidebar">
-        <div class="logo-group">
+        <div class="logo-group" onclick="goToMainMenu()" title="Return to Main Menu">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v5.35"/>
                 <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
@@ -601,12 +733,12 @@
             <h2>PDF MERGER</h2>
         </div>
 
-        <button class="control-btn secondary" onclick="document.getElementById('fileInput').click()">
+        <button class="control-btn secondary" onclick="handleAddFilesClick()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Add Files
         </button>
 
-        <button class="control-btn secondary" onclick="openHeaderEditor()">
+        <button class="control-btn secondary" onclick="handleGlobalHeadersClick()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
             Headers
         </button>
@@ -688,9 +820,10 @@
                             Back
                         </div>
                         <span style="color: #666;">|</span>
-                        <button class="control-btn secondary" style="padding: 8px 16px; font-size: 13px;" onclick="addHeaderElement('text')">+ Text Box</button>
-                        <button class="control-btn secondary" style="padding: 8px 16px; font-size: 13px;" onclick="addHeaderElement('page')">+ Page #</button>
-                        <button class="control-btn danger" style="padding: 8px 16px; font-size: 13px;" onclick="deleteActiveHeaderElement()">
+                        
+                        <button class="control-btn secondary toolbar-btn" onclick="addHeaderElement('text')">+ Text Box</button>
+                        <button class="control-btn secondary toolbar-btn" onclick="addHeaderElement('page')">+ Page #</button>
+                        <button class="control-btn danger toolbar-btn" onclick="deleteActiveHeaderElement()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                         
@@ -715,7 +848,28 @@
                             <option value="Cambria-Math">Cambria Math</option>
                         </select>
                         <input type="number" id="fontSizeInput" class="style-num" value="12" min="6" max="72" onchange="updateSelectedStyle('fontSize', this.value)">
-                        <input type="color" id="colorSelect" class="style-color" value="#000000" onchange="updateSelectedStyle('color', this.value)">
+                        
+                        <div class="custom-color-wrapper">
+                            <div id="colorSelectBtn" class="color-swatch-btn" onclick="toggleColorPicker(event)" style="background-color: #000000;"></div>
+                            <div id="colorPickerPopout" class="color-picker-popout">
+                                <div class="color-grid">
+                                    <div class="c-swatch" style="background: #000000;" onclick="selectColor('#000000')"></div>
+                                    <div class="c-swatch" style="background: #ffffff;" onclick="selectColor('#ffffff')"></div>
+                                    <div class="c-swatch" style="background: #4ade80;" onclick="selectColor('#4ade80')"></div>
+                                    <div class="c-swatch" style="background: #fbcfe8;" onclick="selectColor('#fbcfe8')"></div>
+                                    <div class="c-swatch" style="background: #ff6b6b;" onclick="selectColor('#ff6b6b')"></div>
+                                    <div class="c-swatch" style="background: #3b82f6;" onclick="selectColor('#3b82f6')"></div>
+                                    <div class="c-swatch" style="background: #eab308;" onclick="selectColor('#eab308')"></div>
+                                    <div class="c-swatch" style="background: #a855f7;" onclick="selectColor('#a855f7')"></div>
+                                </div>
+                                <input type="text" id="hexInput" class="hex-input" placeholder="#HEX" onchange="selectColor(this.value)" onkeyup="if(event.key==='Enter') selectColor(this.value)">
+                                <label class="advanced-color-label">
+                                    Advanced...
+                                    <input type="color" id="nativeColorInput" style="position:absolute; opacity:0; width:0; height:0; pointer-events:none;" oninput="selectColor(this.value)">
+                                </label>
+                            </div>
+                        </div>
+
                     </div>
                     <div class="tool-group">
                         <label class="settings-label" style="margin:0; font-size:11px; color:#aaa;">Margin (px):</label>
@@ -771,7 +925,11 @@
         let activeContextIndex = -1; 
         let customInsertFilesList = []; 
 
-        let headerElements = [];
+        // SEPARATED HEADER MEMORY ARRAYS
+        let globalHeaderElements = []; 
+        let globalHeaderRange = "1-end";
+        let headerElements = []; 
+        
         let localHeaderMode = false;
         let currentLocalGroupId = null;
         let copiedHeaderElement = null; 
@@ -877,6 +1035,34 @@
             document.getElementById('colIncBtn').disabled = (currentCols >= maxAllowed);
         }
 
+        // --- GLOBAL NAVIGATION ---
+        async function forceGoToMainMenu() {
+            let wasInEditor = !document.getElementById('headerEditorWrapper').classList.contains('hidden');
+            
+            if (wasInEditor) {
+                await closeHeaderEditor(); 
+            }
+            
+            let wasInPage = !document.getElementById('pageViewWrapper').classList.contains('hidden');
+            if (wasInPage) {
+                await closePageView();
+            }
+        }
+        
+        function goToMainMenu() {
+            forceGoToMainMenu();
+        }
+
+        async function handleAddFilesClick() {
+            await forceGoToMainMenu();
+            document.getElementById('fileInput').click();
+        }
+
+        async function handleGlobalHeadersClick() {
+            await forceGoToMainMenu();
+            openHeaderEditor();
+        }
+
         const workspace = document.getElementById('editorWorkspace');
         const spacer = document.getElementById('workspaceSpacer');
         const container = document.getElementById('editorCanvasContainer');
@@ -931,6 +1117,22 @@
             }
         });
         
+        // CUSTOM COLOR PICKER LOGIC
+        function toggleColorPicker(e) {
+            e.stopPropagation();
+            document.getElementById('colorPickerPopout').classList.toggle('active');
+        }
+        
+        function selectColor(val) {
+            if (!val.startsWith('#')) val = '#' + val;
+            document.getElementById('colorSelectBtn').style.backgroundColor = val;
+            document.getElementById('hexInput').value = val;
+            updateSelectedStyle('color', val);
+            
+            // Sync Native Input
+            document.getElementById('nativeColorInput').value = val;
+        }
+
         function updateMargin(val) {
             pushHeaderHistory();
             globalMargin = parseInt(val);
@@ -974,10 +1176,26 @@
             showToast("Redo");
         }
 
-        // --- RIGHT CLICK LOGIC ---
-        document.addEventListener('click', () => { 
+        // --- GLOBAL CLICK LISTENER (POPOUTS & MENUS) ---
+        document.addEventListener('click', (e) => { 
             document.getElementById('contextMenu').style.display = 'none'; 
             document.getElementById('headerContextMenu').style.display = 'none'; 
+            
+            const popout = document.getElementById('localHeadersPopout');
+            const btn = document.getElementById('localHeadersBtn');
+            if (popout && popout.classList.contains('active')) {
+                if (!popout.contains(e.target) && !btn.contains(e.target)) {
+                    popout.classList.remove('active');
+                }
+            }
+            
+            const colorPopout = document.getElementById('colorPickerPopout');
+            const colorBtn = document.getElementById('colorSelectBtn');
+            if (colorPopout && colorPopout.classList.contains('active')) {
+                if (!colorPopout.contains(e.target) && !colorBtn.contains(e.target)) {
+                    colorPopout.classList.remove('active');
+                }
+            }
         });
 
         function showHeaderContextMenu(e, id) {
@@ -1046,13 +1264,12 @@
                 const isEdge = (e.clientX < rect.left + edgeSize || e.clientX > rect.right - edgeSize || e.clientY < rect.top + edgeSize || e.clientY > rect.bottom - edgeSize);
                 
                 if (div.classList.contains('is-tabbed') && e.target.classList.contains('header-slot')) {
-                    return; // Chrome Native Text Menu
+                    return; 
                 }
                 if (!div.classList.contains('is-tabbed') && !isEdge) {
-                    return; // Chrome Native Text Menu
+                    return; 
                 }
                 
-                // If it is the edge, let the div's own oncontextmenu handle the custom popup
                 e.preventDefault(); 
                 return;
             }
@@ -1189,7 +1406,10 @@
                 localHeaderMode = false;
                 currentLocalGroupId = null;
                 document.getElementById('headerRange').disabled = false;
-                document.getElementById('headerRange').value = "1-end";
+                document.getElementById('headerRange').value = globalHeaderRange;
+                
+                // LOAD GLOBAL MEMORY
+                headerElements = JSON.parse(JSON.stringify(globalHeaderElements));
             }
 
             document.getElementById('fileViewWrapper').classList.add('hidden');
@@ -1274,67 +1494,82 @@
             return result.join(",");
         }
 
+        // --- CONVERTED TO PROMISE ---
         function closeHeaderEditor() {
-            if (localHeaderMode) {
-                const f = files.find(x => x.id === currentFileId);
-                if (f) {
-                    if (!f.localGroups) f.localGroups = [];
-                    
-                    const existingIdx = f.localGroups.findIndex(g => g.id === currentLocalGroupId);
-                    if (existingIdx !== -1) f.localGroups.splice(existingIdx, 1);
-                    
-                    let groupPages = [];
-                    const parts = document.getElementById('headerRange').value.split(',');
-                    parts.forEach(p => {
-                        if (p.includes('-')) {
-                            const [s, e] = p.split('-').map(n => parseInt(n));
-                            for(let i=s; i<=e; i++) groupPages.push(i-1);
-                        } else {
-                            groupPages.push(parseInt(p) - 1);
-                        }
-                    });
+            return new Promise(resolve => {
+                if (localHeaderMode) {
+                    const f = files.find(x => x.id === currentFileId);
+                    if (f) {
+                        if (!f.localGroups) f.localGroups = [];
+                        
+                        const existingIdx = f.localGroups.findIndex(g => g.id === currentLocalGroupId);
+                        
+                        let groupPages = [];
+                        const parts = document.getElementById('headerRange').value.split(',');
+                        parts.forEach(p => {
+                            if (p.includes('-')) {
+                                const [s, e] = p.split('-').map(n => parseInt(n));
+                                for(let i=s; i<=e; i++) groupPages.push(i-1);
+                            } else {
+                                groupPages.push(parseInt(p) - 1);
+                            }
+                        });
 
-                    f.localGroups.forEach(g => {
-                        g.pages = g.pages.filter(p => !groupPages.includes(p));
-                    });
-                    f.localGroups = f.localGroups.filter(g => g.pages.length > 0);
-                    
-                    if (headerElements.length > 0) {
-                        f.localGroups.push({
+                        const newGroupData = {
                             id: currentLocalGroupId,
                             name: `Group (${document.getElementById('headerRange').value})`,
                             rangeStr: document.getElementById('headerRange').value,
                             elements: JSON.parse(JSON.stringify(headerElements)),
                             pages: groupPages
-                        });
-                    }
-                    renderPages(f, true); 
-                }
-                
-                const editor = document.getElementById('headerEditorWrapper');
-                container.classList.remove('no-anim'); 
-                editor.classList.remove('editor-active'); 
-                setTimeout(() => {
-                    editor.classList.remove('active');
-                    editor.classList.add('hidden');
-                    document.getElementById('pageViewWrapper').className = 'view-wrapper active';
-                    headerElements = []; 
-                    document.getElementById('localHeadersBtn').style.display = 'flex'; 
-                }, 200);
+                        };
 
-            } else {
-                const editor = document.getElementById('headerEditorWrapper');
-                container.classList.remove('no-anim'); 
-                editor.classList.remove('editor-active'); 
-                setTimeout(() => {
-                    editor.classList.remove('active');
-                    editor.classList.add('hidden');
-                    document.getElementById('fileViewWrapper').className = 'view-wrapper active';
-                    currentFileId = null;
-                    selectedIndices.clear();
-                    renderFiles(true);
-                }, 200); 
-            }
+                        if (existingIdx !== -1) {
+                            if (headerElements.length > 0) {
+                                f.localGroups[existingIdx] = newGroupData;
+                            } else {
+                                f.localGroups.splice(existingIdx, 1);
+                            }
+                        } else {
+                            if (headerElements.length > 0) {
+                                f.localGroups.push(newGroupData);
+                            }
+                        }
+                        
+                        renderPages(f, true); 
+                    }
+                    
+                    const editor = document.getElementById('headerEditorWrapper');
+                    container.classList.remove('no-anim'); 
+                    editor.classList.remove('editor-active'); 
+                    setTimeout(() => {
+                        editor.classList.remove('active');
+                        editor.classList.add('hidden');
+                        document.getElementById('pageViewWrapper').className = 'view-wrapper active';
+                        headerElements = []; 
+                        document.getElementById('localHeadersBtn').style.display = 'flex'; 
+                        resolve();
+                    }, 200);
+
+                } else {
+                    // SAVE TO GLOBAL MEMORY
+                    globalHeaderElements = JSON.parse(JSON.stringify(headerElements));
+                    globalHeaderRange = document.getElementById('headerRange').value.trim();
+                    
+                    const editor = document.getElementById('headerEditorWrapper');
+                    container.classList.remove('no-anim'); 
+                    editor.classList.remove('editor-active'); 
+                    setTimeout(() => {
+                        editor.classList.remove('active');
+                        editor.classList.add('hidden');
+                        
+                        document.getElementById('fileViewWrapper').className = 'view-wrapper active';
+                        currentFileId = null;
+                        selectedIndices.clear();
+                        renderFiles(true);
+                        resolve();
+                    }, 200); 
+                }
+            });
         }
 
         function addHeaderElement(type) {
@@ -1405,9 +1640,45 @@
             let t3 = s3 ? s3.innerText.replace(/\n/g,'') : '';
             el.text = `${t1}\t${t2}\t${t3}`;
         }
+        
+        function renderGlobalHeadersAsGhost() {
+            if (!localHeaderMode) return;
+            
+            // Remove previous ghosts
+            Array.from(container.getElementsByClassName('global-ghost-text')).forEach(el => el.remove());
+            
+            globalHeaderElements.forEach(el => {
+                const div = document.createElement('div');
+                div.className = 'global-ghost-text';
+                div.style.fontFamily = el.font;
+                div.style.color = el.color;
+                div.style.fontSize = (el.fontSize * editorScale) + 'px';
+                div.style.left = el.x + 'px';
+                div.style.top = el.y + 'px';
+                
+                const hasTabs = el.text.includes('\t');
+                if (hasTabs) {
+                    div.style.width = '100%';
+                    div.style.left = '0px';
+                    div.style.display = 'grid';
+                    div.style.gridTemplateColumns = '1fr auto 1fr';
+                    const parts = el.text.split('\t');
+                    const s1 = document.createElement('span'); s1.innerText = parts[0] || ''; s1.style.paddingLeft = globalMargin + 'px'; s1.style.justifySelf = 'start'; s1.style.textAlign = 'left';
+                    const s2 = document.createElement('span'); s2.innerText = parts[1] || ''; s2.style.justifySelf = 'center'; s2.style.textAlign = 'center';
+                    const s3 = document.createElement('span'); s3.innerText = parts[2] || ''; s3.style.paddingRight = globalMargin + 'px'; s3.style.justifySelf = 'end'; s3.style.textAlign = 'right';
+                    div.append(s1, s2, s3);
+                } else {
+                    div.innerText = el.text;
+                }
+                container.appendChild(div);
+            });
+        }
 
         function renderHeaderElements() {
             Array.from(container.getElementsByClassName('draggable-text')).forEach(el => el.remove());
+            
+            renderGlobalHeadersAsGhost();
+            
             headerElements.forEach(el => {
                 const div = document.createElement('div');
                 div.className = 'draggable-text';
@@ -1423,11 +1694,11 @@
                     
                     if (div.classList.contains('is-tabbed')) {
                         if (e.target.classList.contains('header-slot')) {
-                            return; // Let native Chrome context menu pop up for typing
+                            return; 
                         }
                     } else {
                         if (!isEdge) {
-                            return; // Let native Chrome context menu pop up for typing
+                            return; 
                         }
                     }
                     showHeaderContextMenu(e, el.id);
@@ -1471,7 +1742,14 @@
                         if (e.key === 'Tab') {
                             e.preventDefault();
                             pushHeaderHistory();
-                            el.text = el.text + "\t"; 
+                            
+                            const txt = div.innerText.trim();
+                            if (txt === '' || txt === DEFAULT_TEXT) {
+                                el.text = "\t\t"; 
+                            } else {
+                                el.text = txt + "\t\t"; 
+                            }
+                            
                             renderHeaderElements();
                             setTimeout(() => {
                                 const newDiv = container.querySelector(`.draggable-text[data-id="${el.id}"]`);
@@ -1486,6 +1764,11 @@
                     div.onfocus = () => { 
                         activeHeaderId = el.id; 
                         if(div.innerText === DEFAULT_TEXT) { div.innerText = ''; el.text = ''; }
+                        
+                        // Update color picker UI on focus
+                        document.getElementById('colorSelectBtn').style.backgroundColor = el.color;
+                        document.getElementById('hexInput').value = el.color;
+                        document.getElementById('nativeColorInput').value = el.color;
                     };
                     div.onblur = () => { 
                         if(div.innerText.trim() === '') { div.innerText = DEFAULT_TEXT; el.text = DEFAULT_TEXT; }
@@ -1501,8 +1784,13 @@
                     }
                     activeHeaderId = el.id;
                     document.getElementById('fontSizeInput').value = el.fontSize;
-                    document.getElementById('colorSelect').value = el.color;
                     document.getElementById('fontSelect').value = el.font;
+                    
+                    // Update Custom Color Picker visually
+                    document.getElementById('colorSelectBtn').style.backgroundColor = el.color;
+                    document.getElementById('hexInput').value = el.color;
+                    document.getElementById('nativeColorInput').value = el.color;
+
                     if(!div.classList.contains('is-tabbed')) { if(div.innerText === DEFAULT_TEXT) div.focus(); }
                     const rect = div.getBoundingClientRect();
                     const edgeSize = 10; 
@@ -1571,14 +1859,27 @@
                 const el = headerElements.find(x => x.id === activeHeaderId);
                 if(el) {
                     document.getElementById('fontSizeInput').value = el.fontSize;
-                    document.getElementById('colorSelect').value = el.color;
                     document.getElementById('fontSelect').value = el.font;
+                    document.getElementById('colorSelectBtn').style.backgroundColor = el.color;
+                    document.getElementById('hexInput').value = el.color;
+                    document.getElementById('nativeColorInput').value = el.color;
                 }
             }
         }
 
         async function mergeFiles() {
             if (!files.length) return alert("No files!");
+            
+            // Wait for UI to collapse and variables to save securely
+            await forceGoToMainMenu();
+            
+            const exportOverlay = document.getElementById('exportOverlay');
+            exportOverlay.classList.remove('success');
+            exportOverlay.classList.add('active');
+            
+            // Give browser time to paint overlay
+            await new Promise(r => setTimeout(r, 100));
+
             try {
                 const merged = await PDFLib.PDFDocument.create();
                 
@@ -1605,9 +1906,9 @@
                 };
                 const hexToRgb = (hex) => { const r = parseInt(hex.slice(1, 3), 16) / 255; const g = parseInt(hex.slice(3, 5), 16) / 255; const b = parseInt(hex.slice(5, 7), 16) / 255; return { r, g, b }; };
 
-                // GLOBAL HEADERS
-                if (headerElements.length > 0) {
-                    const rangeStr = document.getElementById('headerRange').value.toLowerCase().trim();
+                // GLOBAL HEADERS (Applied First)
+                if (globalHeaderElements.length > 0) {
+                    const rangeStr = globalHeaderRange.toLowerCase().trim();
                     pages.forEach((page, idx) => {
                         const pageNum = idx + 1;
                         let shouldApply = false;
@@ -1620,12 +1921,12 @@
                             else { if (pageNum == parseInt(rangeStr)) shouldApply = true; }
                         }
                         if (shouldApply) {
-                            applyElementsToPage(page, headerElements, pageNum, totalPages, fonts, hexToRgb);
+                            applyElementsToPage(page, globalHeaderElements, pageNum, totalPages, fonts, hexToRgb);
                         }
                     });
                 }
                 
-                // LOCAL HEADERS
+                // LOCAL HEADERS (Applied Sequentially on top)
                 files.forEach((f, fIdx) => {
                     if (f.localGroups && f.localGroups.length > 0) {
                         const startPage = fileStartIndices[fIdx]; 
@@ -1648,6 +1949,10 @@
                 if (!name) name = `merged_${Date.now()}`;
                 if (!name.toLowerCase().endsWith('.pdf')) name += '.pdf';
                 
+                // SHOW SUCCESS ANIMATION
+                exportOverlay.classList.add('success');
+                await new Promise(r => setTimeout(r, 1500)); 
+
                 // NATIVE BROWSER DOWNLOAD UI
                 const blobUrl = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'}));
                 const a = document.createElement('a'); 
@@ -1658,14 +1963,19 @@
                 document.body.removeChild(a);
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 
-            } catch (e) { console.error(e); alert("Merge Error"); }
+            } catch (e) { 
+                console.error(e); alert("Merge Error"); 
+            } finally {
+                setTimeout(() => { exportOverlay.classList.remove('active'); }, 500);
+            }
         }
         
         function applyElementsToPage(page, elements, pageNum, totalPages, fonts, hexToRgb) {
              const { width, height } = page.getSize();
              const scaleFactor = 2; 
              elements.forEach(el => {
-                let rawText = el.text.replace('{x}', pageNum).replace('{y}', totalPages);
+                let rawText = el.text.replace(/\{x\}/g, pageNum).replace(/\{y\}/g, totalPages);
+                
                 const fontObj = fonts[el.font] || fonts['Helvetica'];
                 const c = hexToRgb(el.color);
                 const fSize = parseInt(el.fontSize);
@@ -1758,12 +2068,19 @@
             if (currentFileId) {
                 const f = files.find(x => x.id === currentFileId);
                 if (f && f.localGroups) {
-                     const groupIdx = f.localGroups.findIndex(g => g.pages.includes(i));
-                     if (groupIdx !== -1) {
+                     let appliedGroups = [];
+                     f.localGroups.forEach((g, gIdx) => {
+                         if (g.pages.includes(i)) appliedGroups.push(gIdx + 1);
+                     });
+                     
+                     if (appliedGroups.length > 0) {
                          const badge = document.createElement('div');
                          badge.className = 'header-badge';
-                         badge.innerText = `H${groupIdx + 1}`;
-                         badge.title = 'Has Local Header';
+                         badge.innerText = `H${appliedGroups.join(',')}`;
+                         if (appliedGroups.length > 1) {
+                             badge.style.width = 'auto';
+                         }
+                         badge.title = `Has Local Headers: ${appliedGroups.map(x=>'H'+x).join(', ')}`;
                          c.appendChild(badge);
                      }
                 }
@@ -1791,24 +2108,41 @@
             menu.innerHTML = '';
             
             if (currentFileId) {
+                if (index !== -1) {
+                    const itemEdit = document.createElement('div');
+                    itemEdit.className = 'ctx-item';
+                    itemEdit.innerHTML = '<span>Edit Headers</span>';
+                    itemEdit.onclick = () => { handleLocalHeaderEdit(e, index); menu.style.display='none'; };
+                    menu.appendChild(itemEdit);
+                }
+
                 const item1 = document.createElement('div');
                 item1.className = 'ctx-item';
                 item1.innerHTML = '<span>Insert Here</span>';
                 item1.onclick = () => { 
                     document.getElementById('contextFileInput').click(); 
+                    menu.style.display='none';
                 };
                 menu.appendChild(item1);
 
                 const item2 = document.createElement('div');
                 item2.className = 'ctx-item';
                 item2.innerHTML = '<span>Insert at Page...</span>';
-                item2.onclick = () => { openCustomInsertModal(activeContextIndex); };
+                item2.onclick = () => { openCustomInsertModal(activeContextIndex); menu.style.display='none'; };
                 menu.appendChild(item2);
             } else {
+                if (index !== -1) {
+                    const itemOpen = document.createElement('div');
+                    itemOpen.className = 'ctx-item';
+                    itemOpen.innerHTML = '<span>Open File</span>';
+                    itemOpen.onclick = () => { openPageView(files[index].id); menu.style.display='none'; };
+                    menu.appendChild(itemOpen);
+                }
+
                 const item = document.createElement('div');
                 item.className = 'ctx-item';
                 item.innerHTML = '<span>Insert Files Here</span>';
-                item.onclick = () => { document.getElementById('contextFileInput').click(); };
+                item.onclick = () => { document.getElementById('contextFileInput').click(); menu.style.display='none'; };
                 menu.appendChild(item);
             }
 
@@ -2391,6 +2725,9 @@
             const con=document.getElementById('pageGrid'); con.innerHTML=''; 
             f.pageOrder.forEach((p,i)=>{ 
                 const c=createCard(`Page ${p}`,'',i); 
+                
+                c.ondblclick = (e) => handleLocalHeaderEdit(e, i);
+                
                 con.appendChild(c); 
             }); 
             updateSelectionVisuals(); updateGridVisuals();
@@ -2517,16 +2854,19 @@
         }
 
         function closePageView() { 
-            renderSessionId++; 
-            document.getElementById('pageViewWrapper').className='view-wrapper hidden'; 
-            document.getElementById('localHeadersBtn').style.display = 'none'; 
-            document.getElementById('localHeadersPopout').classList.remove('active'); 
-            selectedIndices.clear(); 
-            setTimeout(()=>{
-                document.getElementById('fileViewWrapper').className='view-wrapper active'; 
-                currentFileId=null; 
-                renderFiles(true);
-            }, 150); 
+            return new Promise(resolve => {
+                renderSessionId++; 
+                document.getElementById('pageViewWrapper').className='view-wrapper hidden'; 
+                document.getElementById('localHeadersBtn').style.display = 'none'; 
+                document.getElementById('localHeadersPopout').classList.remove('active'); 
+                selectedIndices.clear(); 
+                setTimeout(()=>{
+                    document.getElementById('fileViewWrapper').className='view-wrapper active'; 
+                    currentFileId=null; 
+                    renderFiles(true);
+                    resolve();
+                }, 150); 
+            });
         }
     </script>
 </body>
