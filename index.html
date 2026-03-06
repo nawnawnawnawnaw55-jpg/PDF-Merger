@@ -7,24 +7,30 @@
     
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234ade80' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v5.35'/><path d='M14 2v5a1 1 0 0 0 1 1h5'/><path d='M14 19h6'/><path d='M17 16v6'/></svg>">
 
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --text-color: #e0e0e0;
+            --bg-color: #161618;
+            --text-color: #d4d4d8;
             --accent-green: #4ade80;
-            --pastel-pink: #fbcfe8;
-            --pink-hover: #f9a8d4;
-            --input-bg: #2d2d2d;
-            --card-bg: #252525;
-            --card-selected-bg: #382e34;
-            --scrollbar-gray: #555555;
-            --error-red: #ff6b6b;
-            --sidebar-width: 250px;
+            --accent-green-dim: rgba(74, 222, 128, 0.12);
+            --pastel-pink: #f9a8d4;
+            --pink-hover: #f472b6;
+            --input-bg: #1e1e21;
+            --card-bg: #1e1e21;
+            --card-selected-bg: #2e1e2a;
+            --scrollbar-gray: #3f3f46;
+            --error-red: #f87171;
+            --sidebar-width: 256px;
             --col-count: 5;
             --card-height: 240px;
+            --border-subtle: #2e2e33;
+            --font-ui: 'Syne', system-ui, sans-serif;
+            --font-mono: 'DM Mono', 'Consolas', monospace;
         }
 
         * {
@@ -35,28 +41,38 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: var(--font-ui);
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
             height: 100vh;
             display: flex;
             overflow: hidden;
+            background-image: radial-gradient(circle, #2a2a30 1px, transparent 1px);
+            background-size: 28px 28px;
         }
 
         /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
             background-color: var(--input-bg);
-            border-right: 2px solid var(--accent-green);
+            border-right: 1px solid var(--border-subtle);
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            gap: 15px; 
+            padding: 20px 16px;
+            gap: 10px; 
             z-index: 10;
-            box-shadow: 5px 0 20px rgba(0,0,0,0.5);
+            box-shadow: 4px 0 24px rgba(0,0,0,0.4);
             flex-shrink: 0;
             position: relative;
+        }
+        
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-green), var(--pastel-pink));
         }
 
         .logo-group {
@@ -64,46 +80,57 @@
             align-items: center;
             gap: 10px;
             color: var(--accent-green);
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             cursor: pointer;
-            transition: transform 0.1s;
+            transition: transform 0.1s, opacity 0.2s;
+            padding: 8px;
+            border-radius: 8px;
         }
+        .logo-group:hover { opacity: 0.85; }
         .logo-group:active { transform: scale(0.97); }
 
-        .logo-group h2 { margin: 0; font-size: 18px; letter-spacing: 2px; font-weight: 900; }
+        .logo-group h2 { margin: 0; font-size: 16px; letter-spacing: 3px; font-weight: 800; font-family: var(--font-ui); text-transform: uppercase; }
 
         .control-btn {
             background-color: var(--pastel-pink);
-            color: #333;
+            color: #1a1a1a;
             border: none;
-            padding: 12px;
-            font-weight: 800;
+            padding: 11px 12px;
+            font-weight: 700;
+            font-family: var(--font-ui);
             border-radius: 8px;
             cursor: pointer;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
+            letter-spacing: 1.2px;
+            font-size: 12px;
+            transition: all 0.18s cubic-bezier(0.2, 0, 0, 1);
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 8px;
             width: 100%;
-            height: 45px;
+            height: 42px;
             white-space: nowrap;
         }
 
-        .control-btn:hover { background-color: var(--pink-hover); transform: translateY(-2px); }
-        .control-btn.secondary { background-color: transparent; border: 2px solid var(--accent-green); color: var(--accent-green); }
-        .control-btn.secondary:hover { background-color: rgba(74, 222, 128, 0.1); }
-        .control-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .control-btn:hover { background-color: var(--pink-hover); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(249, 168, 212, 0.3); }
+        .control-btn.secondary { background-color: transparent; border: 1px solid var(--border-subtle); color: var(--text-color); }
+        .control-btn.secondary:hover { border-color: var(--accent-green); color: var(--accent-green); background-color: var(--accent-green-dim); box-shadow: none; transform: translateY(-1px); }
+        .control-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
-        .control-btn.danger { background-color: transparent; border: 2px solid var(--error-red); color: var(--error-red); }
-        .control-btn.danger:hover { background-color: rgba(255, 107, 107, 0.1); }
+        .control-btn.danger { background-color: transparent; border: 1px solid rgba(248, 113, 113, 0.4); color: var(--error-red); }
+        .control-btn.danger:hover { background-color: rgba(248, 113, 113, 0.1); border-color: var(--error-red); box-shadow: none; transform: translateY(-1px); }
+
+        .sidebar-divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: 2px 0;
+        }
 
         .slider-group { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
         .slider-label {
-            font-size: 11px; color: var(--accent-green); text-transform: uppercase;
-            letter-spacing: 1px; display: block;
+            font-size: 10px; color: #52525b; text-transform: uppercase;
+            letter-spacing: 1.5px; display: block; font-family: var(--font-mono);
         }
 
         .zoom-controls {
@@ -111,24 +138,66 @@
             align-items: center;
             justify-content: space-between;
             background-color: var(--bg-color);
-            border-radius: 6px;
+            border-radius: 8px;
             padding: 4px;
-            border: 1px solid #444;
+            border: 1px solid var(--border-subtle);
+            gap: 4px;
+        }
+
+        /* Range slider */
+        .col-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--border-subtle);
+            outline: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .col-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--pastel-pink);
+            cursor: pointer;
+            border: 2px solid var(--bg-color);
+            box-shadow: 0 0 6px rgba(249,168,212,0.4);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .col-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--pastel-pink);
+            cursor: pointer;
+            border: 2px solid var(--bg-color);
+            box-shadow: 0 0 6px rgba(249,168,212,0.4);
+        }
+        .col-slider:hover::-webkit-slider-thumb {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(249,168,212,0.6);
+        }
+        .col-slider:focus::-webkit-slider-thumb {
+            transform: scale(1.2);
         }
         
         .zoom-btn {
             width: 30px; height: 30px;
             background: transparent; border: none;
-            color: var(--pastel-pink); cursor: pointer;
+            color: var(--text-color); cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            border-radius: 4px; transition: background 0.2s, opacity 0.2s;
+            border-radius: 6px; transition: background 0.2s, color 0.2s;
         }
-        .zoom-btn:hover:not(:disabled) { background-color: rgba(251, 207, 232, 0.1); }
-        .zoom-btn:disabled { color: #555; cursor: not-allowed; opacity: 0.5; }
+        .zoom-btn:hover:not(:disabled) { background-color: var(--accent-green-dim); color: var(--accent-green); }
+        .zoom-btn:disabled { color: #3f3f46; cursor: not-allowed; }
         
         .zoom-display {
-            font-family: 'Consolas', monospace;
-            font-size: 13px; font-weight: bold; color: var(--text-color);
+            font-family: var(--font-mono);
+            font-size: 13px; font-weight: 500; color: var(--text-color);
             min-width: 60px; text-align: center;
         }
 
@@ -139,61 +208,74 @@
         }
 
         .main-header {
-            height: 60px; display: flex; align-items: center; padding: 0 30px;
-            background-color: var(--bg-color); border-bottom: 1px solid #333;
-            flex-shrink: 0; z-index: 20;
+            height: 56px; display: flex; align-items: center; padding: 0 24px;
+            background-color: var(--input-bg); border-bottom: 1px solid var(--border-subtle);
+            flex-shrink: 0; z-index: 20; justify-content: space-between;
         }
         .project-title-wrapper { display: flex; align-items: center; gap: 12px; position: relative; }
         .header-icon { color: var(--accent-green); }
-        .edit-icon { color: #666; transition: color 0.2s; cursor: pointer; }
+        .edit-icon { color: #3f3f46; transition: color 0.2s; cursor: pointer; }
         .project-title-wrapper:hover .edit-icon { color: var(--accent-green); }
         .filename-input-display {
             background: transparent; border: none; border-bottom: 2px solid transparent;
-            color: var(--pastel-pink); font-family: 'Consolas', monospace; font-size: 18px;
-            font-weight: bold; padding: 5px 0; outline: none; width: 300px; transition: all 0.2s;
+            color: var(--pastel-pink); font-family: var(--font-mono); font-size: 16px;
+            font-weight: 500; padding: 5px 0; outline: none; width: 280px; transition: all 0.2s;
         }
-        .filename-input-display:hover { border-bottom-color: #444; }
-        .filename-input-display:focus { border-bottom-color: var(--accent-green); background-color: #222; padding-left: 10px; }
+        .filename-input-display:hover { border-bottom-color: var(--border-subtle); }
+        .filename-input-display:focus { border-bottom-color: var(--accent-green); background-color: rgba(74,222,128,0.04); padding-left: 8px; border-radius: 4px 4px 0 0; }
+        
+        .file-count-badge {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: #52525b;
+            background: var(--bg-color);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 2px 10px;
+            transition: all 0.3s;
+        }
+        .file-count-badge.has-files { color: var(--accent-green); border-color: rgba(74,222,128,0.3); }
 
         /* HELP BOX STYLES */
         .help-container { position: relative; display: inline-block; cursor: help; margin-left: 10px; z-index: 20000; }
         .help-icon { 
             width: 20px; height: 20px; 
-            border: 1px solid var(--accent-green); 
+            border: 1px solid rgba(74,222,128,0.3); 
             color: var(--accent-green); 
-            border-radius: 4px; 
+            border-radius: 50%; 
             text-align: center; 
             line-height: 18px; 
             font-weight: bold; 
-            font-size: 13px; 
-            background: rgba(74, 222, 128, 0.1);
+            font-size: 12px; 
+            background: rgba(74, 222, 128, 0.08);
             transition: all 0.2s;
+            font-family: var(--font-mono);
         }
-        .help-container:hover .help-icon { background: var(--accent-green); color: #000; }
+        .help-container:hover .help-icon { background: var(--accent-green); color: #000; border-color: var(--accent-green); }
         .help-tooltip { 
             visibility: hidden; opacity: 0;
             width: 220px; 
-            background-color: #222; 
-            color: #ccc; 
+            background-color: var(--input-bg); 
+            color: #a1a1aa; 
             text-align: left; 
-            border-radius: 6px; 
+            border-radius: 10px; 
             padding: 12px; 
             position: absolute; 
             z-index: 20001; 
             top: 130%; 
             left: 50%;
             transform: translateX(-50%);
-            border: 1px solid #444; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.9); 
+            border: 1px solid var(--border-subtle); 
+            box-shadow: 0 16px 48px rgba(0,0,0,0.8); 
             font-size: 12px; 
-            line-height: 1.5; 
+            line-height: 1.6; 
             pointer-events: none; 
             transition: opacity 0.2s; 
         }
         .help-container:hover .help-tooltip { visibility: visible; opacity: 1; }
         .help-list { padding-left: 15px; margin: 5px 0 0 0; }
         .help-list li { margin-bottom: 4px; }
-        .help-title { color: var(--pastel-pink); font-weight: bold; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid #444; padding-bottom: 4px; display: block; margin-bottom: 5px; }
+        .help-title { color: var(--pastel-pink); font-weight: 700; text-transform: uppercase; font-size: 10px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px; display: block; margin-bottom: 6px; letter-spacing: 1.5px; font-family: var(--font-ui); }
 
         .view-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -219,43 +301,63 @@
             width: 100%; 
             aspect-ratio: 1 / 1.414;
             min-width: 0;
-            background-color: var(--card-bg); border: 2px solid transparent;
-            border-radius: 8px; display: flex; flex-direction: column;
+            background-color: var(--card-bg); border: 1px solid var(--border-subtle);
+            border-radius: 10px; display: flex; flex-direction: column;
             position: relative; cursor: pointer; 
-            transition: transform 0.2s, box-shadow 0.2s, border-color 0.1s, background-color 0.2s;
+            transition: transform 0.2s cubic-bezier(0.2,0,0,1), box-shadow 0.2s, border-color 0.15s, background-color 0.15s;
             overflow: hidden; 
         }
         
         body:not(.dragging-active) .card:hover {
-            border-color: var(--pastel-pink); 
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(251, 207, 232, 0.15); 
+            border-color: rgba(249, 168, 212, 0.5); 
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(249,168,212,0.2); 
         }
         
         .card.selected {
             border-color: var(--pastel-pink); 
             background-color: var(--card-selected-bg);
-            box-shadow: 0 0 0 2px var(--pastel-pink), 0 0 20px rgba(251, 207, 232, 0.4); 
+            box-shadow: 0 0 0 2px var(--pastel-pink), 0 8px 24px rgba(249, 168, 212, 0.2); 
             transform: translateY(-2px);
         }
         .card.danger {
             border-color: var(--error-red) !important;
-            background-color: rgba(255, 107, 107, 0.1) !important;
+            background-color: rgba(248, 113, 113, 0.08) !important;
             box-shadow: 0 0 0 2px var(--error-red) !important;
         }
         
         .card.dragging-source { 
-            opacity: 0.3; 
+            opacity: 0.2; 
             filter: grayscale(100%); 
             transform: none !important;
             box-shadow: none !important;
-            border-color: #444;
+            border-color: var(--border-subtle);
             border-style: dashed;
         }
         
         body.dragging-active .card {
             transform: none !important;
             box-shadow: none !important;
+        }
+        
+        /* Order badge on cards */
+        .card-order-badge {
+            position: absolute;
+            bottom: 38px;
+            right: 5px;
+            width: 20px; height: 20px;
+            background: rgba(0,0,0,0.65);
+            color: #52525b;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 500;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 4;
+            pointer-events: none;
+            border: 1px solid var(--border-subtle);
         }
         
         .card.pop-in { animation: popFromCursor 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -329,17 +431,76 @@
 
         .insertion-marker.wrapping .marker-bar-visual { opacity: 0; }
 
-        /* FIXED IMAGE SIZING */
+        /* EMPTY STATE */
+        .empty-state {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+        .empty-state.hidden { opacity: 0; }
+        .empty-icon-wrap {
+            width: 96px; height: 96px;
+            border: 2px dashed rgba(74,222,128,0.3);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(74,222,128,0.4);
+            animation: floatIcon 3s ease-in-out infinite;
+            transition: border-color 0.2s, color 0.2s, background 0.2s;
+        }
+        .empty-icon-wrap:hover {
+            border-color: rgba(74,222,128,0.7);
+            color: rgba(74,222,128,0.9);
+            background: rgba(74,222,128,0.05);
+            animation-play-state: paused;
+        }
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .empty-title {
+            font-family: var(--font-ui);
+            font-size: 16px;
+            font-weight: 700;
+            color: #3f3f46;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .empty-subtitle {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: #3f3f46;
+            text-align: center;
+            line-height: 1.8;
+        }
+        .empty-kbd {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 2px 6px;
+            color: #52525b;
+        }
+
         .preview-box { 
             flex-grow: 1; 
-            background: #252525; 
+            background: #141416; 
             position: relative; 
             overflow: hidden; 
             display: flex; 
             justify-content: center; 
             align-items: flex-start; 
             pointer-events: none; 
-            border-radius: 6px 6px 0 0; 
+            border-radius: 9px 9px 0 0; 
             z-index: 1; 
             height: 0; 
         }
@@ -351,28 +512,29 @@
             object-fit: cover; 
             object-position: top; 
             opacity: 0; 
-            filter: blur(8px); 
-            transform: scale(0.98); 
-            transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s cubic-bezier(0.2, 0, 0, 1); 
+            filter: blur(6px); 
+            transform: scale(0.99); 
+            transition: opacity 0.5s ease, filter 0.5s ease, transform 0.5s cubic-bezier(0.2, 0, 0, 1); 
         }
         .preview-box canvas.loaded { opacity: 1; filter: blur(0); transform: scale(1); }
         .preview-box canvas.immediate { opacity: 1 !important; filter: blur(0) !important; transform: scale(1) !important; transition: none !important; }
 
-        .skeleton-loader { width: 100%; height: 100%; background: linear-gradient(110deg, #2a2a2a 8%, #323232 18%, #2a2a2a 33%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; position: absolute; top: 0; left: 0; }
+        .skeleton-loader { width: 100%; height: 100%; background: linear-gradient(110deg, #1a1a1c 8%, #222226 18%, #1a1a1c 33%); background-size: 200% 100%; animation: shimmer 1.8s linear infinite; position: absolute; top: 0; left: 0; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        .card-footer { height: 35px; background-color: var(--input-bg); border-top: 1px solid #333; display: flex; align-items: center; justify-content: center; padding: 0 10px; font-size: 11px; color: var(--text-color); font-family: 'Consolas', monospace; flex-shrink: 0; pointer-events: none; border-radius: 0 0 8px 8px; z-index: 1; }
+        .card-footer { height: 34px; background-color: rgba(0,0,0,0.3); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; padding: 0 10px; font-size: 11px; color: #71717a; font-family: var(--font-mono); flex-shrink: 0; pointer-events: none; border-radius: 0 0 10px 10px; z-index: 1; }
         .card-footer span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .delete-btn { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; background-color: var(--error-red); border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.2s; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        .delete-btn svg { stroke: white; width: 16px; height: 16px; }
+        .delete-btn { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; background-color: rgba(248,113,113,0.9); border-radius: 5px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.15s, transform 0.15s; z-index: 5; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+        .delete-btn svg { stroke: white; width: 13px; height: 13px; }
+        .delete-btn:hover { transform: scale(1.1); }
         body:not(.dragging-active) .card:hover .delete-btn { opacity: 1; }
         body.dragging-active .delete-btn { display: none !important; opacity: 0 !important; }
 
-        .page-badge { position: absolute; bottom: 40px; left: 5px; background-color: rgba(0,0,0,0.7); color: var(--accent-green); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 5; pointer-events: none; }
+        .page-badge { position: absolute; bottom: 40px; left: 6px; background-color: rgba(0,0,0,0.65); color: var(--accent-green); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-family: var(--font-mono); font-weight: 500; z-index: 5; pointer-events: none; border: 1px solid rgba(74,222,128,0.2); }
         
         /* HEADER BADGE INDICATOR */
-        .header-badge { position: absolute; top: 5px; right: 35px; width: auto; height: 24px; padding: 0 6px; background-color: #333; border: 1px solid var(--accent-green); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 10px; font-weight: bold; z-index: 4; box-shadow: 0 2px 5px rgba(0,0,0,0.5); pointer-events: none; }
+        .header-badge { position: absolute; top: 6px; right: 35px; width: auto; height: 22px; padding: 0 6px; background-color: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.3); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 10px; font-weight: 500; font-family: var(--font-mono); z-index: 4; box-shadow: 0 2px 8px rgba(0,0,0,0.4); pointer-events: none; }
 
         /* --- EDIT SYMBOL --- */
         .edit-page-btn { position: absolute; top: 5px; left: 5px; width: 24px; height: 24px; background-color: var(--accent-green); border-radius: 4px; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 6; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: transform 0.1s; }
@@ -380,37 +542,37 @@
         .edit-page-btn:hover { transform: scale(1.1); }
         body:not(.dragging-active) .card:hover .edit-page-btn { display: flex; }
 
-        .drop-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 222, 128, 0.1); border: 4px dashed var(--accent-green); display: flex; justify-content: center; align-items: center; z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.2s; backdrop-filter: blur(2px); }
+        .drop-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 222, 128, 0.05); border: 3px dashed var(--accent-green); display: flex; justify-content: center; align-items: center; z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.2s; backdrop-filter: blur(4px); border-radius: 0; }
         .drop-overlay.active { opacity: 1; pointer-events: all; }
-        .drop-text { font-size: 24px; font-weight: bold; color: var(--accent-green); text-transform: uppercase; }
+        .drop-text { font-size: 20px; font-weight: 800; color: var(--accent-green); text-transform: uppercase; letter-spacing: 4px; font-family: var(--font-ui); text-shadow: 0 0 30px rgba(74,222,128,0.5); }
 
-        .nav-bar { height: 50px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid #333; background: var(--bg-color); flex-shrink: 0; border-top: 1px solid #333; }
-        .back-btn { color: var(--accent-green); cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: 14px; padding: 5px 10px; border-radius: 4px; transition: background 0.2s; }
-        .back-btn:hover { background: rgba(74, 222, 128, 0.1); }
-        .current-file-name { margin-left: 20px; color: var(--pastel-pink); font-family: 'Consolas', monospace; font-size: 14px; }
+        .nav-bar { height: 48px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--border-subtle); background: var(--input-bg); flex-shrink: 0; border-top: 1px solid var(--border-subtle); }
+        .back-btn { color: var(--accent-green); cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; padding: 5px 10px; border-radius: 6px; transition: background 0.2s; font-family: var(--font-ui); letter-spacing: 0.5px; }
+        .back-btn:hover { background: var(--accent-green-dim); }
+        .current-file-name { margin-left: 16px; color: var(--pastel-pink); font-family: var(--font-mono); font-size: 13px; }
         #fileInput { display: none; }
         #contextFileInput { display: none; }
         #customInsertFileInput { display: none; }
         
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #333; color: var(--accent-green); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--accent-green); font-weight: bold; font-size: 12px; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; display: flex; align-items: center; gap: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--input-bg); color: var(--accent-green); padding: 10px 20px; border-radius: 50px; border: 1px solid rgba(74,222,128,0.3); font-weight: 600; font-size: 12px; font-family: var(--font-mono); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(74,222,128,0.1); }
         .toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
 
         /* MULTI-USE CONTEXT MENU STYLES */
-        .context-menu { position: fixed; background-color: #2b2b2b; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 180px; border-radius: 6px; display: none; z-index: 20000; padding: 5px 0; font-family: 'Segoe UI', sans-serif; font-size: 13px; }
-        .ctx-item { padding: 8px 15px; color: #e0e0e0; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.1s; }
-        .ctx-item:hover { background-color: rgba(74, 222, 128, 0.1); color: var(--accent-green); }
+        .context-menu { position: fixed; background-color: var(--input-bg); border: 1px solid var(--border-subtle); box-shadow: 0 8px 32px rgba(0,0,0,0.6); width: 190px; border-radius: 10px; display: none; z-index: 20000; padding: 6px; font-family: var(--font-ui); font-size: 13px; }
+        .ctx-item { padding: 8px 12px; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.1s; border-radius: 6px; }
+        .ctx-item:hover { background-color: var(--accent-green-dim); color: var(--accent-green); }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 20000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 20000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal { background: #252525; border: 1px solid var(--accent-green); padding: 20px; border-radius: 8px; width: 340px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.2s; }
-        .modal-overlay.active .modal { transform: translateY(0); }
-        .modal h3 { margin: 0; color: var(--accent-green); text-transform: uppercase; font-size: 16px; letter-spacing: 1px; }
-        .modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .modal-input { background: #333; border: 1px solid #555; color: white; padding: 10px; border-radius: 4px; width: 100%; font-family: 'Consolas', monospace; }
+        .modal { background: var(--input-bg); border: 1px solid var(--border-subtle); padding: 24px; border-radius: 14px; width: 360px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05); transform: translateY(16px) scale(0.98); transition: transform 0.2s cubic-bezier(0.2,0,0,1); }
+        .modal-overlay.active .modal { transform: translateY(0) scale(1); }
+        .modal h3 { margin: 0; color: var(--accent-green); text-transform: uppercase; font-size: 14px; letter-spacing: 2px; font-family: var(--font-ui); }
+        .modal-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+        .modal-input { background: var(--bg-color); border: 1px solid var(--border-subtle); color: white; padding: 10px 12px; border-radius: 8px; width: 100%; font-family: var(--font-mono); font-size: 13px; transition: border-color 0.2s; }
         .modal-input:focus { outline: none; border-color: var(--accent-green); }
-        .file-label { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic; }
+        .file-label { font-size: 12px; color: #52525b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic; font-family: var(--font-mono); }
         
-        .loading-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; color: var(--accent-green); font-weight: bold; z-index: 5; }
+        .loading-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; color: var(--accent-green); font-weight: bold; z-index: 5; border-radius: 14px; font-family: var(--font-mono); }
 
         /* --- EXPORT ANIMATION OVERLAY --- */
         .export-overlay {
@@ -551,30 +713,29 @@
         }
         .tool-group { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
         
-        .toolbar-btn { white-space: nowrap !important; width: auto !important; flex-shrink: 0; padding: 8px 16px !important; font-size: 13px !important; }
-        .range-input { width: 80px; background: #333; border: 1px solid #555; color: white; padding: 6px 10px; border-radius: 4px; height: 32px; font-size: 12px; }
-        .range-input:disabled { opacity: 0.5; color: #aaa; cursor: not-allowed; }
-        .style-select { background: #333; border: 1px solid #555; color: white; padding: 6px 10px; border-radius: 4px; font-size: 12px; height: 32px; flex-shrink: 0; }
-        .style-num { width: 55px; background: #333; border: 1px solid #555; color: white; padding: 6px 10px; border-radius: 4px; font-size: 12px; height: 32px; flex-shrink: 0; }
+        .toolbar-btn { white-space: nowrap !important; width: auto !important; flex-shrink: 0; padding: 6px 14px !important; font-size: 12px !important; height: 34px !important; }
+        .range-input { width: 80px; background: var(--bg-color); border: 1px solid var(--border-subtle); color: white; padding: 6px 10px; border-radius: 6px; height: 32px; font-size: 12px; font-family: var(--font-mono); }
+        .range-input:disabled { opacity: 0.4; color: #52525b; cursor: not-allowed; }
+        .style-select { background: var(--bg-color); border: 1px solid var(--border-subtle); color: white; padding: 6px 10px; border-radius: 6px; font-size: 12px; height: 32px; flex-shrink: 0; font-family: var(--font-ui); }
+        .style-num { width: 55px; background: var(--bg-color); border: 1px solid var(--border-subtle); color: white; padding: 6px 10px; border-radius: 6px; font-size: 12px; height: 32px; flex-shrink: 0; font-family: var(--font-mono); }
         
-        /* THEME COLOR PICKER POPOUT */
         .custom-color-wrapper { position: relative; flex-shrink: 0; }
         .color-swatch-btn {
-            width: 32px; height: 32px; border: 2px solid var(--accent-green);
+            width: 32px; height: 32px; border: 2px solid var(--border-subtle);
             border-radius: 50%; cursor: pointer; transition: transform 0.1s, border-color 0.2s;
         }
         .color-swatch-btn:hover { transform: scale(1.1); border-color: var(--pastel-pink); }
         .color-picker-popout {
-            position: absolute; top: 40px; left: 50%; transform: translateX(-50%); background: var(--card-bg);
-            border: 1px solid var(--accent-green); border-radius: 8px; padding: 10px;
-            display: none; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+            position: absolute; top: 40px; left: 50%; transform: translateX(-50%); background: var(--input-bg);
+            border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px;
+            display: none; flex-direction: column; gap: 10px; box-shadow: 0 16px 48px rgba(0,0,0,0.8);
             z-index: 100; width: 140px;
         }
         .color-picker-popout.active { display: flex; }
         .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .c-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 1px solid #555; transition: transform 0.1s; }
+        .c-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.1s; }
         .c-swatch:hover { transform: scale(1.2); border-color: white; }
-        .hex-input { background: #333; border: 1px solid #555; color: white; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 11px; width: 100%; text-align: center; }
+        .hex-input { background: var(--bg-color); border: 1px solid var(--border-subtle); color: white; padding: 4px 8px; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; width: 100%; text-align: center; }
         
         /* Native Advanced Color Integration */
         .advanced-color-label {
@@ -588,14 +749,14 @@
         /* --- LOCAL HEADER POPOUT --- */
         .local-headers-popout {
             position: absolute;
-            left: 260px;
+            left: 268px;
             top: 250px; 
             width: 250px;
             max-height: 300px;
-            background-color: #222;
-            border: 1px solid var(--accent-green);
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.7);
             z-index: 30;
             display: none;
             flex-direction: column;
@@ -603,33 +764,35 @@
         }
         .local-headers-popout.active { display: flex; }
         .popout-header {
-            padding: 10px;
-            background: #2d2d2d;
-            border-bottom: 1px solid #444;
+            padding: 10px 12px;
+            background: var(--bg-color);
+            border-bottom: 1px solid var(--border-subtle);
             color: var(--accent-green);
-            font-weight: bold;
-            font-size: 12px;
+            font-weight: 700;
+            font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: 1.5px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-family: var(--font-ui);
         }
-        .popout-close { cursor: pointer; color: #aaa; }
+        .popout-close { cursor: pointer; color: #52525b; transition: color 0.2s; }
         .popout-close:hover { color: white; }
         .popout-list {
             overflow-y: auto;
-            padding: 10px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
-        .local-group-item { background: #2d2d2d; padding: 10px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
-        .local-group-item:hover { border-color: #555; }
-        .local-group-item.active { border-color: var(--accent-green); background: rgba(74, 222, 128, 0.05); }
-        .local-group-name { font-size: 12px; color: #e0e0e0; font-family: 'Consolas', monospace; }
-        .local-group-edit { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #aaa; transition: color 0.2s; }
+        .local-group-item { background: var(--bg-color); padding: 10px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s; }
+        .local-group-item:hover { border-color: var(--border-subtle); }
+        .local-group-item.active { border-color: rgba(74,222,128,0.3); background: var(--accent-green-dim); }
+        .local-group-name { font-size: 12px; color: var(--text-color); font-family: var(--font-mono); }
+        .local-group-edit { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #52525b; transition: color 0.2s; }
         .local-group-edit:hover { color: var(--accent-green); background: rgba(255,255,255,0.05); }
-        .local-empty-msg { font-size: 11px; color: #666; font-style: italic; text-align: center; padding: 10px; }
+        .local-empty-msg { font-size: 11px; color: #52525b; font-style: italic; text-align: center; padding: 10px; font-family: var(--font-mono); }
     </style>
 </head>
 <body>
@@ -654,7 +817,7 @@
     <div id="ghostContainer"></div>
     <div id="toast" class="toast">Action Undone</div>
 
-    <div id="contextMenu" class="context-menu"></div>
+    <div id="contextMenu" class="contextMenu"></div>
 
     <div id="headerContextMenu" class="context-menu"></div>
 
@@ -663,8 +826,7 @@
             <span>Local Headers</span>
             <span class="popout-close" onclick="toggleLocalHeadersPopout()">✕</span>
         </div>
-        <div class="popout-list" id="localGroupList">
-            </div>
+        <div class="popout-list" id="localGroupList"></div>
     </div>
 
     <div id="uploadModal" class="modal-overlay">
@@ -742,6 +904,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
             Headers
         </button>
+        
+        <div class="sidebar-divider"></div>
 
         <button class="control-btn" onclick="mergeFiles()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -756,14 +920,16 @@
         <div class="slider-group">
             <span class="slider-label">Items Per Row</span>
             <div class="zoom-controls">
-                <button class="zoom-btn" id="colDecBtn" onclick="changeGridColumns(-1)" title="Fewer Columns (Bigger)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <button class="zoom-btn" id="colDecBtn" onclick="changeGridColumns(-1)" title="Fewer Columns">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
-                <span class="zoom-display" id="gridDisplay">5</span>
-                <button class="zoom-btn" id="colIncBtn" onclick="changeGridColumns(1)" title="More Columns (Smaller)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <input type="range" id="colSlider" class="col-slider" min="1" max="20" value="5"
+                    oninput="changeGridColumnsAbsolute(parseInt(this.value))" title="Drag to resize">
+                <button class="zoom-btn" id="colIncBtn" onclick="changeGridColumns(1)" title="More Columns">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
             </div>
+            <span class="zoom-display" id="gridDisplay" style="text-align:center; display:block; font-size:11px;">Per row: 5</span>
         </div>
     </div>
 
@@ -787,17 +953,28 @@
                     </div>
                 </div>
             </div>
+            <span id="fileCountBadge" class="file-count-badge">0 files</span>
         </div>
 
-        <input type="file" id="fileInput" multiple accept=".pdf,.png,.jpg,.jpeg" onchange="handleFileSelect(this.files)">
-        <input type="file" id="contextFileInput" multiple accept=".pdf,.png,.jpg,.jpeg" onchange="handleContextFileSelect(this.files)">
-        <input type="file" id="customInsertFileInput" multiple accept=".pdf,.png,.jpg,.jpeg" onchange="handleCustomInsertFiles(this.files)">
+        <input type="file" id="fileInput" multiple accept=".pdf,.png,.jpg,.jpeg,.docx" onchange="handleFileSelect(this.files)">
+        <input type="file" id="contextFileInput" multiple accept=".pdf,.png,.jpg,.jpeg,.docx" onchange="handleContextFileSelect(this.files)">
+        <input type="file" id="customInsertFileInput" multiple accept=".pdf,.png,.jpg,.jpeg,.docx" onchange="handleCustomInsertFiles(this.files)">
         
-        <div class="drop-overlay" id="dropOverlay"><div class="drop-text">Drop Files Here</div></div>
+        <div class="drop-overlay" id="dropOverlay"><div class="drop-text">↓ Drop Files Here</div></div>
 
         <div style="position: relative; flex-grow: 1;">
             <div id="fileViewWrapper" class="view-wrapper active">
                 <div id="fileGrid" class="grid-container"></div>
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-icon-wrap" onclick="handleAddFilesClick()" style="cursor:pointer;" title="Add files">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                    </div>
+                    <div class="empty-title">No files yet</div>
+                    <div class="empty-subtitle">
+                        Drop PDFs here or click<br>
+                        <span class="empty-kbd">Add Files</span> in the sidebar
+                    </div>
+                </div>
             </div>
 
             <div id="pageViewWrapper" class="view-wrapper hidden">
@@ -1025,14 +1202,29 @@
             return Math.max(20, itemCount); 
         }
 
+        function changeGridColumnsAbsolute(val) {
+            let maxAllowed = getMaxCols();
+            currentCols = Math.max(MIN_COLS, Math.min(maxAllowed, val));
+            updateGridVisuals();
+        }
+
         function updateGridVisuals() {
             let maxAllowed = getMaxCols();
             if (currentCols > maxAllowed) currentCols = maxAllowed;
             if (currentCols < MIN_COLS) currentCols = MIN_COLS;
             document.documentElement.style.setProperty('--col-count', currentCols);
-            document.getElementById('gridDisplay').innerText = currentCols;
+            const display = document.getElementById('gridDisplay');
+            if (display) display.innerText = currentCols === 1 ? 'Per row: 1' : `Per row: ${currentCols}`;
             document.getElementById('colDecBtn').disabled = (currentCols <= MIN_COLS);
             document.getElementById('colIncBtn').disabled = (currentCols >= maxAllowed);
+            const slider = document.getElementById('colSlider');
+            if (slider) {
+                slider.max = maxAllowed;
+                slider.value = currentCols;
+                // Update slider track fill
+                const pct = ((currentCols - MIN_COLS) / (maxAllowed - MIN_COLS)) * 100;
+                slider.style.background = `linear-gradient(to right, var(--pastel-pink) ${pct}%, var(--border-subtle) ${pct}%)`;
+            }
         }
 
         // --- GLOBAL NAVIGATION ---
@@ -1054,6 +1246,11 @@
         }
 
         async function handleAddFilesClick() {
+            if (currentFileId) {
+                // Already inside a file — skip the choice modal and go straight to insert
+                document.getElementById('fileInput').click();
+                return;
+            }
             await forceGoToMainMenu();
             document.getElementById('fileInput').click();
         }
@@ -1890,9 +2087,25 @@
                     fileStartIndices.push(currentPageCount);
                     const buffer = await f.file.arrayBuffer();
                     const src = await PDFLib.PDFDocument.load(buffer);
+                    
+                    // Native copyPages retains all selectable text naturally
                     const copied = await merged.copyPages(src, f.pageOrder.map(p=>p-1));
                     copied.forEach(p => merged.addPage(p));
                     currentPageCount += copied.length;
+
+                    // --- NEW ENVELOPE ATTACHMENT LOGIC ---
+                    // copyPages strips attachments, so we explicitly append tracked raw files here!
+                    if (f.attachments && f.attachments.length > 0) {
+                        for (const att of f.attachments) {
+                            const attBytes = new Uint8Array(await att.file.arrayBuffer());
+                            await merged.attach(attBytes, att.name, {
+                                mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                description: 'Original Retained Document',
+                                creationDate: new Date(),
+                                modificationDate: new Date(),
+                            });
+                        }
+                    }
                 }
                 
                 const pages = merged.getPages();
@@ -1993,7 +2206,8 @@
                 ...f, 
                 pageOrder: [...f.pageOrder], 
                 isNested: f.isNested,
-                localGroups: f.localGroups ? JSON.parse(JSON.stringify(f.localGroups)) : [] 
+                localGroups: f.localGroups ? JSON.parse(JSON.stringify(f.localGroups)) : [],
+                attachments: f.attachments ? [...f.attachments] : []
             })); 
         }
         function pushHistory() { historyStack.push(cloneState(files)); if(historyStack.length>MAX_HISTORY) historyStack.shift(); redoStack=[]; }
@@ -2154,6 +2368,39 @@
             if (e.clientY + menu.offsetHeight > window.innerHeight) menu.style.top = (e.clientY - menu.offsetHeight) + 'px';
         }
 
+        // --- ENVELOPE DOCX COVER GENERATOR ---
+        async function createWordCoverPage(file) {
+            const pdfDoc = await PDFLib.PDFDocument.create();
+            const page = pdfDoc.addPage([595.28, 841.89]); // Standard A4 Size
+            const { width, height } = page.getSize();
+            
+            // Dark background (Matches your website card-bg)
+            page.drawRectangle({ x: 0, y: 0, width, height, color: PDFLib.rgb(0.145, 0.145, 0.145) }); 
+            
+            // Microsoft Word Blue Banner
+            page.drawRectangle({ x: 0, y: height - 100, width, height: 100, color: PDFLib.rgb(0.168, 0.341, 0.607) }); 
+            
+            const helvetica = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+            const helveticaBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+            
+            page.drawText('DOCX ENVELOPE', { x: 40, y: height - 60, size: 28, font: helveticaBold, color: PDFLib.rgb(1, 1, 1) });
+            
+            page.drawText(`Filename: ${file.name}`, { x: 40, y: height - 150, size: 16, font: helveticaBold, color: PDFLib.rgb(0.984, 0.811, 0.909) }); // Pastel Pink
+            
+            page.drawText('This page acts as a secure placeholder.', { x: 40, y: height - 200, size: 12, font: helvetica, color: PDFLib.rgb(0.88, 0.88, 0.88) }); // Light text
+            page.drawText('The original Word document has been embedded into this PDF to retain 100% of its formatting.', { x: 40, y: height - 225, size: 12, font: helvetica, color: PDFLib.rgb(0.88, 0.88, 0.88) });
+            
+            page.drawText('How to access the original file:', { x: 40, y: height - 270, size: 14, font: helveticaBold, color: PDFLib.rgb(0.29, 0.87, 0.5) }); // Accent Green
+            
+            page.drawText('1. Open this merged PDF in a desktop viewer (e.g., Adobe Acrobat, Foxit).', { x: 40, y: height - 300, size: 12, font: helvetica, color: PDFLib.rgb(0.88, 0.88, 0.88) });
+            page.drawText('2. Open the "Attachments" or "Paperclip" panel on the sidebar.', { x: 40, y: height - 325, size: 12, font: helvetica, color: PDFLib.rgb(0.88, 0.88, 0.88) });
+            page.drawText('3. Double-click the attached .docx file to open it in Microsoft Word.', { x: 40, y: height - 350, size: 12, font: helvetica, color: PDFLib.rgb(0.88, 0.88, 0.88) });
+
+            const pdfBytes = await pdfDoc.save();
+            return new Blob([pdfBytes], { type: 'application/pdf' });
+        }
+
+
         async function handleContextFileSelect(fileList) {
             if (!fileList.length) return;
             const filesToAdd = Array.from(fileList);
@@ -2169,6 +2416,30 @@
                 let insertIdx = (activeContextIndex === -1) ? files.length : activeContextIndex;
                 const newFiles = [];
                 for(const f of filesToAdd) {
+                    
+                    // --- NEW ENVELOPE HANDLER ---
+                    if (f.name.toLowerCase().endsWith('.docx')) {
+                        try {
+                            showToast(`Preparing ${f.name}...`);
+                            const pdfBlob = await createWordCoverPage(f);
+                            const ab = await pdfBlob.arrayBuffer();
+                            const doc = await pdfjsLib.getDocument(ab).promise;
+                            
+                            newFiles.push({
+                                id: Date.now() + Math.random(), 
+                                file: pdfBlob, 
+                                name: f.name.replace(/\.[^.]+$/, "") + ".pdf", 
+                                pdfDoc: doc, 
+                                pageCount: doc.numPages, 
+                                pageOrder: [1], 
+                                hasAnimated: false, 
+                                localGroups: [],
+                                attachments: [{ name: f.name, file: f }] // Track original file
+                            });
+                        } catch(e) { console.error(e); showToast("Failed to prepare Word document."); }
+                        continue;
+                    }
+
                     if(f.type.startsWith('image/')) {
                         try {
                             const ab=await f.arrayBuffer(); const doc=await PDFLib.PDFDocument.create();
@@ -2176,13 +2447,13 @@
                             const p=doc.addPage([img.width,img.height]); p.drawImage(img,{x:0,y:0,width:img.width,height:img.height});
                             const bytes=await doc.save(); const blob=new Blob([bytes],{type:'application/pdf'});
                             const jsDoc=await pdfjsLib.getDocument(await blob.arrayBuffer()).promise;
-                            newFiles.push({id:Date.now()+Math.random(), file:blob, name:f.name.replace(/\.[^.]+$/,"")+".pdf", pdfDoc:jsDoc, pageCount:1, pageOrder:[1], hasAnimated:false});
+                            newFiles.push({id:Date.now()+Math.random(), file:blob, name:f.name.replace(/\.[^.]+$/,"")+".pdf", pdfDoc:jsDoc, pageCount:1, pageOrder:[1], hasAnimated:false, localGroups: [], attachments: []});
                         } catch(e){console.error(e);}
                     }
                     else if(f.type==='application/pdf') {
                         try {
                             const ab=await f.arrayBuffer(); const doc=await pdfjsLib.getDocument(ab).promise;
-                            newFiles.push({id:Date.now()+Math.random(), file:f, name:f.name, pdfDoc:doc, pageCount:doc.numPages, pageOrder:Array.from({length:doc.numPages},(_,i)=>i+1), hasAnimated:false});
+                            newFiles.push({id:Date.now()+Math.random(), file:f, name:f.name, pdfDoc:doc, pageCount:doc.numPages, pageOrder:Array.from({length:doc.numPages},(_,i)=>i+1), hasAnimated:false, localGroups: [], attachments: []});
                         } catch(e){console.error(e);}
                     }
                 }
@@ -2247,7 +2518,17 @@
                 let newPagesFlat = [];
                 for (const f of filesList) {
                     let docToAdd;
-                    if (f.type.startsWith('image/')) {
+                    
+                    if (f.name.toLowerCase().endsWith('.docx')) {
+                        const pdfBlob = await createWordCoverPage(f);
+                        const ab = await pdfBlob.arrayBuffer();
+                        docToAdd = await PDFLib.PDFDocument.load(ab);
+                        
+                        // Pass attachment tracking upward to the parent file!
+                        if (!currentFileEntry.attachments) currentFileEntry.attachments = [];
+                        currentFileEntry.attachments.push({ name: f.name, file: f });
+                        
+                    } else if (f.type.startsWith('image/')) {
                         const tempDoc = await PDFLib.PDFDocument.create();
                         const ab = await f.arrayBuffer();
                         let img;
@@ -2282,7 +2563,8 @@
                     pageOrder: Array.from({ length: newJsDoc.numPages }, (_, i) => i + 1), 
                     hasAnimated: false,
                     isNested: true,
-                    localGroups: [] 
+                    localGroups: [],
+                    attachments: currentFileEntry.attachments || []
                 };
                 
                 renderPages(files[currentFileIndex], false);
@@ -2570,7 +2852,8 @@
             if (fileList.length === 0) return;
             if (currentFileId) {
                 pendingFiles = Array.from(fileList);
-                document.getElementById('uploadModal').classList.add('active');
+                // Default: insert inside the current file — skip the choice modal
+                showPageSelect();
                 return;
             }
             await processFilesToAdd(Array.from(fileList));
@@ -2579,6 +2862,29 @@
         async function processFilesToAdd(list) {
             const isFirst = files.length===0; if(list.length) pushHistory();
             for(const f of list) {
+
+                if (f.name.toLowerCase().endsWith('.docx')) {
+                    try {
+                        showToast(`Preparing ${f.name}...`);
+                        const pdfBlob = await createWordCoverPage(f);
+                        const ab = await pdfBlob.arrayBuffer();
+                        const doc = await pdfjsLib.getDocument(ab).promise;
+                        
+                        files.push({
+                            id: Date.now() + Math.random(), 
+                            file: pdfBlob, 
+                            name: f.name.replace(/\.[^.]+$/, "") + ".pdf", 
+                            pdfDoc: doc, 
+                            pageCount: doc.numPages, 
+                            pageOrder: [1],
+                            hasAnimated: false, 
+                            localGroups: [],
+                            attachments: [{ name: f.name, file: f }]
+                        });
+                    } catch(e) { console.error(e); showToast("Failed to prepare Word document."); }
+                    continue;
+                }
+
                 if(f.type.startsWith('image/')) {
                     try {
                         const ab=await f.arrayBuffer(); const doc=await PDFLib.PDFDocument.create();
@@ -2586,13 +2892,13 @@
                         const p=doc.addPage([img.width,img.height]); p.drawImage(img,{x:0,y:0,width:img.width,height:img.height});
                         const bytes=await doc.save(); const blob=new Blob([bytes],{type:'application/pdf'});
                         const jsDoc=await pdfjsLib.getDocument(await blob.arrayBuffer()).promise;
-                        files.push({id:Date.now()+Math.random(), file:blob, name:f.name.replace(/\.[^.]+$/,"")+".pdf", pdfDoc:jsDoc, pageCount:1, pageOrder:[1], hasAnimated:false, localGroups: []});
+                        files.push({id:Date.now()+Math.random(), file:blob, name:f.name.replace(/\.[^.]+$/,"")+".pdf", pdfDoc:jsDoc, pageCount:1, pageOrder:[1], hasAnimated:false, localGroups: [], attachments: []});
                     } catch(e){console.error(e);} continue;
                 }
                 if(f.type!=='application/pdf') continue;
                 try {
                     const ab=await f.arrayBuffer(); const doc=await pdfjsLib.getDocument(ab).promise;
-                    files.push({id:Date.now()+Math.random(), file:f, name:f.name, pdfDoc:doc, pageCount:doc.numPages, pageOrder:Array.from({length:doc.numPages},(_,i)=>i+1), hasAnimated:false, localGroups: []});
+                    files.push({id:Date.now()+Math.random(), file:f, name:f.name, pdfDoc:doc, pageCount:doc.numPages, pageOrder:Array.from({length:doc.numPages},(_,i)=>i+1), hasAnimated:false, localGroups: [], attachments: []});
                 } catch(e){console.error(e);}
             }
             if(isFirst && files.length) {
@@ -2660,7 +2966,16 @@
                 let newPagesFlat = [];
                 for (const f of pendingFiles) {
                     let docToAdd;
-                    if (f.type.startsWith('image/')) {
+
+                    if (f.name.toLowerCase().endsWith('.docx')) {
+                        const pdfBlob = await createWordCoverPage(f);
+                        const ab = await pdfBlob.arrayBuffer();
+                        docToAdd = await PDFLib.PDFDocument.load(ab);
+                        
+                        if (!currentFileEntry.attachments) currentFileEntry.attachments = [];
+                        currentFileEntry.attachments.push({ name: f.name, file: f });
+                        
+                    } else if (f.type.startsWith('image/')) {
                         const tempDoc = await PDFLib.PDFDocument.create();
                         const ab = await f.arrayBuffer();
                         let img;
@@ -2694,7 +3009,8 @@
                     pageOrder: Array.from({ length: newJsDoc.numPages }, (_, i) => i + 1), 
                     hasAnimated: false,
                     isNested: true,
-                    localGroups: [] 
+                    localGroups: [],
+                    attachments: currentFileEntry.attachments || []
                 };
                 
                 document.getElementById('pageSelectModal').classList.remove('active');
@@ -2715,7 +3031,9 @@
                 c.ondblclick=()=>openPageView(f.id); 
                 con.appendChild(c); 
             }); 
-            updateSelectionVisuals(); updateGridVisuals(); 
+            updateSelectionVisuals(); updateGridVisuals();
+            updateFileCountBadge();
+            updateEmptyState();
             lazyLoadImages(); 
         }
 
@@ -2851,6 +3169,20 @@
                 document.getElementById('pageViewWrapper').className='view-wrapper active'; 
                 renderPages(f,false);
             }, 150); 
+        }
+
+        function updateFileCountBadge() {
+            const badge = document.getElementById('fileCountBadge');
+            if (!badge) return;
+            const count = files.length;
+            badge.textContent = count === 0 ? '0 files' : count === 1 ? '1 file' : `${count} files`;
+            badge.classList.toggle('has-files', count > 0);
+        }
+
+        function updateEmptyState() {
+            const es = document.getElementById('emptyState');
+            if (!es) return;
+            es.classList.toggle('hidden', files.length > 0);
         }
 
         function closePageView() { 
